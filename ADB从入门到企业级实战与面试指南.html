@@ -1,0 +1,2616 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADB 从入门到企业级实战与面试全解</title>
+<meta name="description" content="ADB 原理、命令、自动化测试、CI/CD、设备农场、安全合规与 27 道面试题的分层指南">
+<meta name="author" content="ADB 实战手册">
+<style>
+/* ===================== 设计令牌 ===================== */
+:root{
+  --base: 16px;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          "Cascadia Mono", "Liberation Mono", monospace;
+  --accent:#2563eb; --accent-soft:rgba(37,99,235,.10);
+  --green:#16a34a; --green-soft:rgba(22,163,74,.10);
+  --amber:#d97706; --amber-soft:rgba(217,119,6,.10);
+  --red:#dc2626;  --red-soft:rgba(220,38,38,.09);
+  --violet:#7c3aed; --violet-soft:rgba(124,58,237,.10);
+  --bg:#ffffff; --bg-soft:#f7f8fa; --surface:#ffffff; --surface-2:#f2f4f7;
+  --text:#151922; --text-2:#4b5563; --muted:#7b8698;
+  --border:#e5e8ee; --border-2:#d3d9e3;
+  --code-bg:#0e1526; --code-head:#16203a; --code-text:#e3e9f5;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px -12px rgba(16,24,40,.18);
+  --radius:14px;
+  --sidebar:320px;
+}
+html[data-theme="dark"]{
+  --accent:#60a5fa; --accent-soft:rgba(96,165,250,.14);
+  --green:#4ade80; --green-soft:rgba(74,222,128,.12);
+  --amber:#fbbf24; --amber-soft:rgba(251,191,36,.12);
+  --red:#f87171;  --red-soft:rgba(248,113,113,.12);
+  --violet:#a78bfa; --violet-soft:rgba(167,139,250,.14);
+  --bg:#080b12; --bg-soft:#0c1018; --surface:#0f141f; --surface-2:#161c29;
+  --text:#e7ebf3; --text-2:#adb7c7; --muted:#7d8798;
+  --border:#212938; --border-2:#2b3547;
+  --code-bg:#0a0f1c; --code-head:#121a2b; --code-text:#dde5f4;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 28px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+html{font-size:var(--base);scroll-behavior:smooth;scroll-padding-top:24px}
+body{
+  margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  line-height:1.75;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:var(--accent-soft)}
+
+/* ===================== 顶部进度条 ===================== */
+.progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:80;background:transparent}
+.progress i{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--accent),var(--green));transition:width .1s linear}
+
+/* ===================== 侧边栏 ===================== */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:var(--sidebar);z-index:60;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.brand{display:flex;gap:11px;align-items:center;padding:20px 20px 14px}
+.brand svg{width:30px;height:30px;flex:0 0 auto;color:var(--green)}
+.brand b{display:block;font-size:15px;letter-spacing:.2px;line-height:1.3}
+.brand em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:2px}
+.side-tools{padding:0 16px 12px;display:flex;gap:8px}
+.searchbtn{
+  flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--muted);
+  border-radius:10px;padding:8px 11px;font-size:12.5px;font-family:inherit;text-align:left;
+}
+.searchbtn:hover{border-color:var(--border-2);color:var(--text-2)}
+.searchbtn kbd{
+  margin-left:auto;font-family:var(--mono);font-size:10.5px;background:var(--bg);
+  border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--muted);
+}
+.toc{overflow-y:auto;padding:6px 12px 20px;flex:1;scrollbar-width:thin}
+.toc::-webkit-scrollbar{width:8px}
+.toc::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:8px}
+.toc-group{margin-bottom:2px}
+.toc-l2{
+  display:flex;gap:9px;align-items:baseline;padding:7px 9px;border-radius:9px;
+  color:var(--text-2);font-size:13px;font-weight:600;line-height:1.45;
+  border-left:2px solid transparent;
+}
+.toc-l2 .chip{
+  flex:0 0 auto;font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  min-width:20px;height:20px;line-height:20px;text-align:center;border-radius:6px;
+  background:var(--surface-2);color:var(--muted);
+}
+.toc-l2:hover{background:var(--surface-2);text-decoration:none;color:var(--text)}
+.toc-l2.active{background:var(--accent-soft);color:var(--accent);border-left-color:var(--accent)}
+.toc-l2.active .chip{background:var(--accent);color:#fff}
+.toc-sub{display:none;margin:2px 0 8px 22px;border-left:1px dashed var(--border-2);padding-left:9px}
+.toc-group.open .toc-sub{display:block}
+.toc-l3{
+  display:block;padding:5px 9px;border-radius:8px;font-size:12.3px;color:var(--muted);
+  line-height:1.5;
+}
+.toc-l3:hover{background:var(--surface-2);color:var(--text);text-decoration:none}
+.toc-l3.active{color:var(--accent);background:var(--accent-soft);font-weight:600}
+.side-foot{
+  border-top:1px solid var(--border);padding:11px 16px;display:flex;
+  align-items:center;gap:8px;flex-wrap:wrap;
+}
+.mini{
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);
+  border-radius:8px;padding:5px 9px;font-size:11.5px;cursor:pointer;font-family:inherit;
+  transition:.15s;
+}
+.mini:hover{border-color:var(--accent);color:var(--accent)}
+.mini.icon{width:30px;padding:5px 0;text-align:center}
+.spacer{flex:1}
+
+/* ===================== 主内容 ===================== */
+.wrap{margin-left:var(--sidebar);display:block}
+.doc{max-width:900px;margin:0 auto;padding:0 44px 140px}
+
+/* Hero */
+.hero{padding:64px 0 12px}
+.hero h1{
+  font-size:2.6rem;line-height:1.2;margin:0 0 14px;letter-spacing:-.02em;
+  background:linear-gradient(100deg,var(--text) 30%,var(--accent));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+html[data-theme="dark"] .hero h1{background:linear-gradient(100deg,#fff 25%,var(--accent));-webkit-background-clip:text;background-clip:text}
+.hero .lede{font-size:1.06rem;color:var(--text-2);margin:0 0 22px;max-width:70ch}
+.stats{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:26px}
+.stat{
+  display:flex;align-items:baseline;gap:6px;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--text-2);
+}
+.stat b{color:var(--text);font-size:14px}
+.paths{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:8px}
+.path{
+  display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:15px 16px;box-shadow:var(--shadow);transition:.18s;color:inherit;
+}
+.path:hover{transform:translateY(-2px);border-color:var(--accent);text-decoration:none}
+.path .pico{
+  width:36px;height:36px;border-radius:11px;display:flex;align-items:center;
+  justify-content:center;margin-bottom:10px;border:1px solid transparent;
+}
+.path .pico svg{width:19px;height:19px;display:block}
+.path:nth-child(1) .pico{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.path:nth-child(2) .pico{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.path:nth-child(3) .pico{background:var(--violet-soft);color:var(--violet);border-color:var(--violet)}
+.path:nth-child(4) .pico{background:var(--amber-soft);color:var(--amber);border-color:var(--amber)}
+.path b{display:block;font-size:13.5px;margin-bottom:4px}
+.path em{display:block;font-style:normal;font-size:11.8px;color:var(--muted);line-height:1.55}
+
+/* 正文排版 */
+.doc h2{
+  font-size:1.62rem;margin:3.4rem 0 1.1rem;padding-bottom:.55rem;letter-spacing:-.01em;
+  border-bottom:1px solid var(--border);scroll-margin-top:20px;
+}
+.doc h2:first-of-type{margin-top:1.6rem}
+.doc h3{font-size:1.2rem;margin:2.4rem 0 .85rem;padding-left:12px;position:relative;scroll-margin-top:20px}
+.doc h3::before{content:"";position:absolute;left:0;top:.34em;bottom:.3em;width:3px;
+  border-radius:3px;background:linear-gradient(var(--accent),var(--green))}
+.doc h2 .anchor,.doc h3 .anchor{
+  margin-left:9px;font-size:.72em;font-weight:400;color:var(--muted);opacity:0;
+  text-decoration:none;transition:.16s;
+}
+.doc h2:hover .anchor,.doc h3:hover .anchor{opacity:1}
+.doc h2 .anchor:hover,.doc h3 .anchor:hover{color:var(--accent);text-decoration:none}
+.doc h2 .anchor.done,.doc h3 .anchor.done{opacity:1;color:var(--green)}
+.doc h4{font-size:1.02rem;margin:1.6rem 0 .6rem}
+.doc p{margin:.85rem 0;color:var(--text)}
+.doc ul,.doc ol{margin:.8rem 0;padding-left:1.5rem}
+.doc li{margin:.36rem 0}
+.doc li>ul,.doc li>ol{margin:.3rem 0}
+.doc strong{font-weight:700;color:var(--text)}
+.doc hr{border:0;border-top:1px dashed var(--border-2);margin:2.6rem 0}
+.doc img{max-width:100%;border-radius:10px}
+
+code{
+  font-family:var(--mono);font-size:.875em;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:6px;padding:.1em .38em;
+  color:var(--violet);word-break:break-word;
+}
+html[data-theme="dark"] code{color:#c4b5fd}
+
+/* 代码块 */
+.doc pre{
+  position:relative;background:var(--code-bg);border:1px solid var(--border);
+  border-radius:var(--radius);margin:1.1rem 0;overflow:hidden;box-shadow:var(--shadow);
+}
+.pre-head{
+  display:flex;align-items:center;gap:10px;padding:7px 12px;background:var(--code-head);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.pre-head .lang{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:#8fa2c4;
+}
+.pre-head .dots{display:flex;gap:5px}
+.pre-head .dots i{width:9px;height:9px;border-radius:50%;background:#2c3a55;display:block}
+.pre-head .dots i:first-child{background:#ff5f57}
+.pre-head .dots i:nth-child(2){background:#febc2e}
+.pre-head .dots i:nth-child(3){background:#28c840}
+.copy{
+  margin-left:auto;font-family:inherit;font-size:11px;color:#9fb0cf;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:7px;padding:3px 10px;transition:.15s;
+}
+.copy:hover{background:rgba(255,255,255,.14);color:#fff}
+.copy.done{color:#4ade80;border-color:rgba(74,222,128,.5)}
+.doc pre code{
+  display:block;padding:14px 16px;overflow-x:auto;background:transparent;border:0;
+  color:var(--code-text);font-size:12.9px;line-height:1.72;white-space:pre;
+  -webkit-overflow-scrolling:touch;
+}
+.doc pre code::-webkit-scrollbar{height:9px}
+.doc pre code::-webkit-scrollbar-thumb{background:#27334d;border-radius:9px}
+.tok-c{color:#7dd3fc;font-weight:600}
+.tok-f{color:#fbbf24}
+.tok-s{color:#86efac}
+.tok-v{color:#c4b5fd}
+.tok-n{color:#f0abfc}
+.tok-m{color:#64748b;font-style:italic}
+
+/* 表格 */
+.tw{overflow-x:auto;margin:1.2rem 0;border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.4px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:700;font-size:12.5px;color:var(--text-2);
+  white-space:nowrap;letter-spacing:.02em}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--bg-soft)}
+td code{font-size:12px;white-space:nowrap}
+
+/* Callout */
+.callout{
+  margin:1.2rem 0;border-radius:var(--radius);border:1px solid var(--border);
+  border-left:4px solid var(--muted);background:var(--surface-2);overflow:hidden;
+}
+.callout-h{
+  font-size:12.5px;font-weight:700;letter-spacing:.04em;padding:9px 16px 0;
+  display:flex;align-items:center;gap:7px;
+}
+.callout-b{padding:2px 16px 10px}
+.callout-b>p:first-child{margin-top:.35rem}
+.callout-b>p:last-child{margin-bottom:.35rem}
+.callout.info{border-left-color:var(--accent);background:var(--accent-soft)}
+.callout.info .callout-h{color:var(--accent)}
+.callout.tip{border-left-color:var(--violet);background:var(--violet-soft)}
+.callout.tip .callout-h{color:var(--violet)}
+.callout.warn{border-left-color:var(--amber);background:var(--amber-soft)}
+.callout.warn .callout-h{color:var(--amber)}
+.callout.danger{border-left-color:var(--red);background:var(--red-soft)}
+.callout.danger .callout-h{color:var(--red)}
+
+/* 面试题手风琴 */
+.qa{
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);
+  margin:.7rem 0;box-shadow:var(--shadow);overflow:hidden;transition:.15s;
+}
+.qa[open]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft),var(--shadow)}
+.qa>summary{
+  list-style:none;cursor:pointer;display:flex;gap:11px;align-items:flex-start;
+  padding:13px 16px;font-weight:600;font-size:14.4px;line-height:1.6;
+}
+.qa>summary::-webkit-details-marker{display:none}
+.qa>summary:hover{background:var(--surface-2)}
+.qa>summary::after{
+  content:"+";margin-left:auto;color:var(--muted);font-family:var(--mono);
+  font-weight:400;font-size:17px;line-height:1.2;transition:.2s;
+}
+.qa[open]>summary::after{content:"−";color:var(--accent)}
+.qbadge{
+  flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;
+  background:var(--accent);border-radius:7px;padding:2px 8px;margin-top:2px;
+}
+.scene-badge{background:var(--violet)}
+.qa.scene[open]{border-color:var(--violet);box-shadow:0 0 0 1px var(--violet-soft),var(--shadow)}
+.answer{padding:2px 18px 16px;border-top:1px dashed var(--border);font-size:14.4px;color:var(--text)}
+.answer strong{color:var(--text)}
+.answer>.callout{margin-top:.8rem}
+
+/* 难度徽章 */
+.badge{
+  display:inline-block;margin-left:10px;font-size:11px;font-weight:700;vertical-align:middle;
+  border-radius:999px;padding:2px 10px;letter-spacing:.03em;border:1px solid transparent;
+}
+.lv1{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.lv2{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.lv3{background:var(--violet-soft);color:var(--violet);border-color:var(--violet)}
+.lv4{background:var(--amber-soft);color:var(--amber);border-color:var(--amber)}
+.lv5{background:var(--surface-2);color:var(--text-2);border-color:var(--border-2)}
+
+/* 加减分对照卡 */
+.verdict{border-radius:var(--radius);padding:6px 18px 12px;margin:1rem 0;border:1px solid var(--border)}
+.verdict h4{margin:.9rem 0 .4rem;font-size:13.5px}
+.verdict ul{margin:.3rem 0;padding-left:1.3rem}
+.verdict li{margin:.42rem 0;font-size:14px}
+.verdict.bad{background:var(--red-soft);border-color:var(--red)}
+.verdict.bad h4{color:var(--red)}
+.verdict.good{background:var(--green-soft);border-color:var(--green)}
+.verdict.good h4{color:var(--green)}
+
+/* 可视化图 */
+.figure{margin:1.6rem 0;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg-soft);padding:16px;box-shadow:var(--shadow);overflow:hidden}
+.figure figcaption{font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px;
+  letter-spacing:.02em}
+.arch-grid{display:grid;grid-template-columns:1fr 134px 1fr;gap:0;align-items:stretch}
+.arch-side{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface);
+  display:flex;flex-direction:column;justify-content:center}
+.arch-side.device{border-color:var(--green)}
+.arch-side.host{border-color:var(--accent)}
+.arch-side-title{font-size:11.5px;font-weight:700;color:var(--text-2);display:flex;
+  align-items:center;gap:7px;margin-bottom:10px;letter-spacing:.03em}
+.arch-side-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.arch-side.device .arch-side-title .dot{background:var(--green)}
+.arch-node{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);
+  border-radius:10px;padding:10px 12px;background:var(--bg)}
+.arch-node .nid{flex:0 0 auto;width:20px;height:20px;border-radius:6px;background:var(--accent);
+  color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:20px;font-family:var(--mono)}
+.arch-side.device .arch-node .nid{background:var(--green)}
+.arch-node b{display:block;font-size:13.2px;font-family:var(--mono)}
+.arch-node em{display:block;font-style:normal;font-size:11.4px;color:var(--muted);
+  line-height:1.5;margin-top:2px}
+.arch-link{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 0;
+  font-size:10.5px;color:var(--muted)}
+.arch-link::before,.arch-link::after{content:"";width:2px;height:12px;
+  background:repeating-linear-gradient(var(--border-2) 0 4px,transparent 4px 8px)}
+.arch-link code{font-size:10.5px;padding:1px 6px}
+.arch-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:0 8px}
+.arch-mid .wire-top{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-2)}
+.arch-mid .wire{width:100%;height:2px;background:linear-gradient(90deg,var(--accent),var(--green));position:relative}
+.arch-mid .wire::before,.arch-mid .wire::after{content:"";position:absolute;top:-3px;
+  width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.arch-mid .wire::before{left:-2px}
+.arch-mid .wire::after{right:-2px;background:var(--green)}
+.arch-mid .wire-label{font-size:10px;color:var(--muted);text-align:center;line-height:1.55;
+  word-break:keep-all}
+.arch-mid .wire-label i{font-style:normal;opacity:.7}
+.arch-note{margin-top:14px;font-size:12.6px;color:var(--text-2);background:var(--surface);
+  border:1px dashed var(--border-2);border-radius:10px;padding:9px 12px;line-height:1.65}
+.arch-note code{font-size:11.5px}
+
+.flow-row{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:10px 12px;
+  border-radius:12px;background:var(--surface);border:1px solid var(--border);margin-bottom:10px}
+.flow-row .tag{font-family:var(--mono);font-size:11px;font-weight:700;border-radius:7px;
+  padding:2px 9px;color:#fff}
+.flow-row.fwd .tag{background:var(--accent)}
+.flow-row.rev .tag{background:var(--violet)}
+.flow-row .box{border:1px solid var(--border-2);border-radius:9px;padding:6px 11px;
+  font-size:12.2px;text-align:center;line-height:1.45;background:var(--bg)}
+.flow-row .box i{font-style:normal;font-family:var(--mono);font-size:10.8px;color:var(--muted)}
+.flow-row .box.mid{background:var(--surface-2);color:var(--muted);font-size:11.5px}
+.flow-row .arrow{color:var(--accent);font-weight:700}
+.flow-row.rev .arrow{color:var(--violet)}
+.flow-row .use{flex:1 1 100%;font-size:11.6px;color:var(--muted);margin-top:2px}
+
+details.raw{margin:.6rem 0 1.4rem;font-size:12.6px}
+details.raw>summary{cursor:pointer;color:var(--muted);padding:5px 0}
+details.raw>summary:hover{color:var(--accent)}
+details.raw pre{margin-top:.5rem}
+
+/* 页脚 */
+.doc-foot{margin-top:4rem;padding-top:1.6rem;border-top:1px solid var(--border);
+  color:var(--muted);font-size:12.5px;display:flex;justify-content:space-between;
+  flex-wrap:wrap;gap:10px}
+
+/* 回到顶部 */
+.totop{
+  position:fixed;right:22px;bottom:22px;width:42px;height:42px;border-radius:50%;
+  border:1px solid var(--border);background:var(--surface);color:var(--text-2);
+  cursor:pointer;font-size:16px;box-shadow:var(--shadow);opacity:0;pointer-events:none;
+  transition:.2s;z-index:55;
+}
+.totop.show{opacity:1;pointer-events:auto}
+.totop:hover{border-color:var(--accent);color:var(--accent)}
+
+/* 搜索面板 */
+.overlay{
+  position:fixed;inset:0;background:rgba(9,13,22,.45);backdrop-filter:blur(3px);
+  z-index:90;display:none;padding-top:9vh;justify-content:center;align-items:flex-start;
+}
+.overlay.show{display:flex}
+.palette{
+  width:min(760px,92vw);background:var(--surface);border:1px solid var(--border-2);
+  border-radius:16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);overflow:hidden;
+  display:flex;flex-direction:column;max-height:76vh;
+}
+.palette .pin{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;
+  align-items:center;gap:10px}
+.palette input{
+  flex:1;border:0;outline:0;background:transparent;color:var(--text);
+  font-size:15px;font-family:inherit;
+}
+.palette .pin .esc{font-size:10.5px;color:var(--muted);font-family:var(--mono);
+  border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+.presults{overflow-y:auto;padding:8px}
+.pgroup{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);padding:9px 10px 5px}
+.phit{
+  display:flex;gap:11px;align-items:center;padding:8px 11px;border-radius:10px;
+  cursor:pointer;font-size:13.4px;color:var(--text-2);
+}
+.phit:hover,.phit.sel{background:var(--accent-soft);color:var(--text)}
+.phit .kind{flex:0 0 auto;font-size:10.5px;font-family:var(--mono);border-radius:6px;
+  padding:1px 7px;background:var(--surface-2);color:var(--muted);border:1px solid var(--border)}
+.phit code{background:transparent;border:0;padding:0;color:var(--text);
+  font-size:12.6px;white-space:pre-wrap;word-break:break-all}
+.phit .where{margin-left:auto;flex:0 0 auto;font-size:11px;color:var(--muted);
+  max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pempty{padding:26px 16px;text-align:center;color:var(--muted);font-size:13px}
+
+/* 移动端 */
+.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:70;width:40px;height:40px;
+  border-radius:11px;border:1px solid var(--border);background:var(--surface);
+  color:var(--text-2);font-size:17px;cursor:pointer;box-shadow:var(--shadow)}
+.scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:59}
+@media (max-width:1100px){
+  :root{--sidebar:290px}
+  .doc{padding:0 26px 120px}
+}
+@media (max-width:900px){
+  .sidebar{transform:translateX(-102%);transition:transform .22s ease}
+  body.nav-open .sidebar{transform:none}
+  body.nav-open .scrim{display:block}
+  .wrap{margin-left:0}
+  .hamburger{display:block}
+  .hero{padding-top:72px}
+  .hero h1{font-size:1.95rem}
+  .doc{padding:0 18px 110px}
+  .arch-grid{grid-template-columns:1fr}
+  .arch-mid{padding:12px 0}
+  .arch-mid .wire{width:2px;height:34px;background:linear-gradient(var(--accent),var(--green))}
+  .arch-mid .wire::before{top:-2px;left:-3px}
+  .arch-mid .wire::after{top:auto;bottom:-2px;left:-3px}
+}
+@media print{
+  .sidebar,.hamburger,.totop,.overlay,.progress,.copy,.anchor{display:none!important}
+  .wrap{margin:0}
+  .doc{padding:0;max-width:none}
+  .qa>.answer{display:block!important}
+  .qa{border:0;box-shadow:none;page-break-inside:avoid}
+  pre,.tw,.figure{box-shadow:none}
+  body{font-size:11pt}
+}
+</style>
+</head>
+<body>
+
+<div class="progress"><i id="bar"></i></div>
+<button class="hamburger" id="hamburger" aria-label="打开目录">☰</button>
+<div class="scrim" id="scrim"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M6.2 10.1a5.8 5.8 0 0 1 11.6 0v6.3a2 2 0 0 1-2 2H8.2a2 2 0 0 1-2-2z"/>
+      <circle cx="9.4" cy="12.6" r="1.05" fill="#fff"/>
+      <circle cx="14.6" cy="12.6" r="1.05" fill="#fff"/>
+      <path d="M7.6 4.6 9.2 7.2M16.4 4.6 14.8 7.2" stroke="currentColor"
+            stroke-width="1.6" stroke-linecap="round" fill="none"/>
+    </svg>
+    <div>
+      <b>ADB 实战手册</b>
+      <em>原理 · 企业级 · 面试</em>
+    </div>
+  </div>
+
+  <div class="side-tools">
+    <button class="searchbtn" id="openSearch">
+      <span>🔍</span><span>搜索章节 / 命令</span>
+      <kbd id="kbdHint">Ctrl K</kbd>
+    </button>
+  </div>
+
+  <nav class="toc" id="toc">
+<div class="toc-group">
+<a class="toc-l2" href="#0-写在前面为什么-adb-值得单独写一篇长文" data-target="0-写在前面为什么-adb-值得单独写一篇长文"><i class="chip">0</i><span>0. 写在前面：为什么 ADB 值得单独写一篇长文</span></a>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#1-原理篇adb-到底是什么" data-target="1-原理篇adb-到底是什么"><i class="chip">1</i><span>1. 原理篇：ADB 到底是什么</span></a>
+<div class="toc-sub">
+<a class="toc-l3" href="#1-1-三端架构" data-target="1-1-三端架构">1.1 三端架构</a>
+<a class="toc-l3" href="#1-2-一次-adb-shell-ls-究竟走了哪些路" data-target="1-2-一次-adb-shell-ls-究竟走了哪些路">1.2 一次 adb shell ls 究竟走了哪些路</a>
+<a class="toc-l3" href="#1-3-端口协议与传输层" data-target="1-3-端口协议与传输层">1.3 端口、协议与传输层</a>
+<a class="toc-l3" href="#1-4-鉴权rsa-密钥与-unauthorized" data-target="1-4-鉴权rsa-密钥与-unauthorized">1.4 鉴权：RSA 密钥与 unauthorized</a>
+</div>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#2-入门篇环境搭建与第一个命令" data-target="2-入门篇环境搭建与第一个命令"><i class="chip">2</i><span>2. 入门篇：环境搭建与第一个命令</span></a>
+<div class="toc-sub">
+<a class="toc-l3" href="#2-1-安装-platform-tools" data-target="2-1-安装-platform-tools">2.1 安装 platform-tools</a>
+<a class="toc-l3" href="#2-2-设备状态全解" data-target="2-2-设备状态全解">2.2 设备状态全解</a>
+<a class="toc-l3" href="#2-3-目标设备的四种指定方式" data-target="2-3-目标设备的四种指定方式">2.3 目标设备的四种指定方式</a>
+</div>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#3-基础篇日常-90-场景的命令" data-target="3-基础篇日常-90-场景的命令"><i class="chip">3</i><span>3. 基础篇：日常 90% 场景的命令</span></a>
+<div class="toc-sub">
+<a class="toc-l3" href="#3-1-设备与连接" data-target="3-1-设备与连接">3.1 设备与连接</a>
+<a class="toc-l3" href="#3-2-应用安装与卸载" data-target="3-2-应用安装与卸载">3.2 应用安装与卸载</a>
+<a class="toc-l3" href="#3-3-文件传输" data-target="3-3-文件传输">3.3 文件传输</a>
+<a class="toc-l3" href="#3-4-shell-与进程" data-target="3-4-shell-与进程">3.4 Shell 与进程</a>
+<a class="toc-l3" href="#3-5-应用与组件操作" data-target="3-5-应用与组件操作">3.5 应用与组件操作</a>
+<a class="toc-l3" href="#3-6-日志-logcat" data-target="3-6-日志-logcat">3.6 日志 logcat</a>
+<a class="toc-l3" href="#3-7-模拟输入" data-target="3-7-模拟输入">3.7 模拟输入</a>
+<a class="toc-l3" href="#3-8-屏幕与录制" data-target="3-8-屏幕与录制">3.8 屏幕与录制</a>
+</div>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#4-进阶篇让它变快变稳变自动" data-target="4-进阶篇让它变快变稳变自动"><i class="chip">4</i><span>4. 进阶篇：让它变快、变稳、变自动</span></a>
+<div class="toc-sub">
+<a class="toc-l3" href="#4-1-adb-shell-vs-adb-exec-out二进制安全的关键" data-target="4-1-adb-shell-vs-adb-exec-out二进制安全的关键">4.1 adb shell vs adb exec-out：二进制安全的关键</a>
+<a class="toc-l3" href="#4-2-端口转发forward-与-reverse" data-target="4-2-端口转发forward-与-reverse">4.2 端口转发：forward 与 reverse</a>
+<a class="toc-l3" href="#4-3-无线调试从-tcp-到-android-11-配对" data-target="4-3-无线调试从-tcp-到-android-11-配对">4.3 无线调试：从 TCP 到 Android 11 配对</a>
+<a class="toc-l3" href="#4-4-性能与诊断工具箱" data-target="4-4-性能与诊断工具箱">4.4 性能与诊断工具箱</a>
+<a class="toc-l3" href="#4-5-自动化测试接口" data-target="4-5-自动化测试接口">4.5 自动化测试接口</a>
+<a class="toc-l3" href="#4-6-ui-自动化底层uiautomator-dump-与-getevent" data-target="4-6-ui-自动化底层uiautomator-dump-与-getevent">4.6 UI 自动化底层：uiautomator dump 与 getevent</a>
+</div>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#5-企业级篇把-adb-变成生产力基础设施" data-target="5-企业级篇把-adb-变成生产力基础设施"><i class="chip">5</i><span>5. 企业级篇：把 ADB 变成生产力基础设施</span></a>
+<div class="toc-sub">
+<a class="toc-l3" href="#5-1-企业里-adb-的三类落地场景" data-target="5-1-企业里-adb-的三类落地场景">5.1 企业里 ADB 的三类落地场景</a>
+<a class="toc-l3" href="#5-2-cicd-集成从-docker-到设备农场" data-target="5-2-cicd-集成从-docker-到设备农场">5.2 CI/CD 集成：从 Docker 到设备农场</a>
+<a class="toc-l3" href="#5-3-设备高可用断线自愈守护进程" data-target="5-3-设备高可用断线自愈守护进程">5.3 设备高可用：断线自愈守护进程</a>
+<a class="toc-l3" href="#5-4-并发与隔离一台机器带多少台设备" data-target="5-4-并发与隔离一台机器带多少台设备">5.4 并发与隔离：一台机器带多少台设备</a>
+<a class="toc-l3" href="#5-5-安全与合规别让-adb-成为后门" data-target="5-5-安全与合规别让-adb-成为后门">5.5 安全与合规：别让 ADB 成为后门</a>
+<a class="toc-l3" href="#5-6-可观测性设备指标与日志采集" data-target="5-6-可观测性设备指标与日志采集">5.6 可观测性：设备指标与日志采集</a>
+<a class="toc-l3" href="#5-7-企业级踩坑清单" data-target="5-7-企业级踩坑清单">5.7 企业级踩坑清单</a>
+</div>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#6-面试篇分层题库-参考答案" data-target="6-面试篇分层题库-参考答案"><i class="chip">6</i><span>6. 面试篇：分层题库 + 参考答案</span></a>
+<div class="toc-sub">
+<a class="toc-l3" href="#6-1-初级1-3-年" data-target="6-1-初级1-3-年">6.1 初级（1-3 年）</a>
+<a class="toc-l3" href="#6-2-中级3-5-年" data-target="6-2-中级3-5-年">6.2 中级（3-5 年）</a>
+<a class="toc-l3" href="#6-3-高级-架构设计" data-target="6-3-高级-架构设计">6.3 高级 / 架构设计</a>
+<a class="toc-l3" href="#6-4-场景设计题重点" data-target="6-4-场景设计题重点">6.4 场景设计题（重点）</a>
+<a class="toc-l3" href="#6-5-面试官视角什么样的回答加分" data-target="6-5-面试官视角什么样的回答加分">6.5 面试官视角：什么样的回答加分</a>
+</div>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#7-故障排查手册" data-target="7-故障排查手册"><i class="chip">7</i><span>7. 故障排查手册</span></a>
+<div class="toc-sub">
+<a class="toc-l3" href="#7-1-设备连接类" data-target="7-1-设备连接类">7.1 设备连接类</a>
+<a class="toc-l3" href="#7-2-server-与服务类" data-target="7-2-server-与服务类">7.2 Server 与服务类</a>
+<a class="toc-l3" href="#7-3-安装与运行类" data-target="7-3-安装与运行类">7.3 安装与运行类</a>
+<a class="toc-l3" href="#7-4-日志与证据类" data-target="7-4-日志与证据类">7.4 日志与证据类</a>
+</div>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#8-附录命令速查" data-target="8-附录命令速查"><i class="chip">8</i><span>8. 附录：命令速查</span></a>
+<div class="toc-sub">
+<a class="toc-l3" href="#8-1-设备与连接" data-target="8-1-设备与连接">8.1 设备与连接</a>
+<a class="toc-l3" href="#8-2-应用" data-target="8-2-应用">8.2 应用</a>
+<a class="toc-l3" href="#8-3-组件与交互" data-target="8-3-组件与交互">8.3 组件与交互</a>
+<a class="toc-l3" href="#8-4-文件与屏幕" data-target="8-4-文件与屏幕">8.4 文件与屏幕</a>
+<a class="toc-l3" href="#8-5-日志与诊断" data-target="8-5-日志与诊断">8.5 日志与诊断</a>
+<a class="toc-l3" href="#8-6-端口与转发" data-target="8-6-端口与转发">8.6 端口与转发</a>
+<a class="toc-l3" href="#8-7-环境变量" data-target="8-7-环境变量">8.7 环境变量</a>
+</div>
+</div>
+<div class="toc-group">
+<a class="toc-l2" href="#结语" data-target="结语"><i class="chip">•</i><span>结语</span></a>
+</div>
+  </nav>
+
+  <div class="side-foot">
+    <button class="mini" id="expandAll" title="展开全部面试题">展开</button>
+    <button class="mini" id="collapseAll" title="收起全部面试题">收起</button>
+    <span class="spacer"></span>
+    <button class="mini icon" id="fsDown" title="减小字号">A−</button>
+    <button class="mini icon" id="fsUp" title="增大字号">A+</button>
+    <button class="mini icon" id="themeBtn" title="切换主题">🌙</button>
+  </div>
+</aside>
+
+<div class="wrap">
+<main class="doc" id="doc">
+
+  <header class="hero">
+    <h1>ADB 从入门到企业级实战与面试全解</h1>
+    <p class="lede">一篇写给「想真正搞懂 ADB」的 Android 工程师、测试开发、DevOps 与面试候选人的长文。 从 `adb devices` 到千台设备农场，从命令速查到面试官真正想听的答案。</p>
+    <div class="stats">
+      <span class="stat"><b>9</b> 个章节</span>
+      <span class="stat"><b>200+</b> 条命令</span>
+      <span class="stat"><b>27</b> 道面试题</span>
+      <span class="stat"><b>3</b> 道场景设计题</span>
+      <span class="stat"><b>5</b> 级自愈模型</span>
+    </div>
+
+    <div class="paths">
+
+    <div class="paths">
+      <a class="path" data-h="1. 原理篇" href="#">
+        <span class="pico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.4.3.6.8.6 1.3v.9h6v-.9c0-.5.2-1 .6-1.3A6 6 0 0 0 12 3z"/></svg></span><b>入门 · 先懂原理</b>
+        <em>三端架构 / 5037 与 5555 / PTY 与二进制安全 —— 面试真正拉开差距的地方</em>
+      </a>
+      <a class="path" data-h="3. 基础篇" href="#">
+        <span class="pico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.2"/><path d="M7.2 9.4 9.8 12l-2.6 2.6M13 14.6h4"/></svg></span><b>日常 · 命令与坑</b>
+        <em>安装参数、日志缓冲、输入模拟、截图录屏，以及失败对照表</em>
+      </a>
+      <a class="path" data-h="5. 企业级篇" href="#">
+        <span class="pico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5V6.2a1 1 0 0 1 1-1h6.4a1 1 0 0 1 1 1v14.3"/><path d="M11.9 20.5V10.4h7.6a1 1 0 0 1 1 1v9.1M2.5 20.5h19"/><path d="M6.4 9.2h1.4M6.4 13h1.4M6.4 16.6h1.4M15 13.6h1.4M15 17h1.4"/></svg></span><b>企业级 · 落地</b>
+        <em>CI/CD 集成、设备自愈、并发隔离、安全合规、12 条踩坑清单</em>
+      </a>
+      <a class="path" data-h="6. 面试篇" href="#">
+        <span class="pico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M8.4 12.4l2.5 2.5 4.7-5.2"/></svg></span><b>面试 · 自测</b>
+        <em>分层题库 + 场景设计题，点击展开核对答案</em>
+      </a>
+    </div>
+
+    </div>
+  </header>
+
+<h2 id="0-写在前面为什么-adb-值得单独写一篇长文">0. 写在前面：为什么 ADB 值得单独写一篇长文</h2>
+<p>很多人对 ADB 的认知停留在「背几个命令」：</p>
+<pre><code class="language-bash">adb install app.apk
+adb logcat
+adb shell
+</code></pre>
+<p>但现实中，ADB 是真机自动化测试、性能采集、CI/CD 流水线、设备农场、企业移动设备管理的<strong>唯一物理入口</strong>。它一头连着你的开发机，一头连着几百台跑着不同 Android 版本的真机。你在业务上遇到的那些"玄学问题"——安装失败、日志抓不到、自动化脚本偶发卡死、CI 上设备掉线——几乎都能追到 ADB 这一层。</p>
+<p>这篇文章分三条线：</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>层次</th>
+<th>关注点</th>
+<th>读者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>教学线</td>
+<td>原理 + 命令 + 为什么这么设计</td>
+<td>入门者、转岗同学</td>
+</tr>
+<tr>
+<td>实战线</td>
+<td>自动化、CI、性能、稳定性治理</td>
+<td>测试开发、DevOps</td>
+</tr>
+<tr>
+<td>面试线</td>
+<td>高频题 + 场景题 + 加分点</td>
+<td>求职者、面试官</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>阅读建议</strong>：原理篇（第 1 章）不要跳。面试拉开差距的地方，几乎全在第 1 章和第 5 章。</p>
+<hr>
+<h2 id="1-原理篇adb-到底是什么">1. 原理篇：ADB 到底是什么</h2>
+<p>ADB = <strong>A</strong>ndroid <strong>D</strong>ebug <strong>B</strong>ridge（Android 调试桥）。名字里三个词都是重点：它是给<strong>调试</strong>用的、它是一个<strong>桥</strong>（不是直接连接）。</p>
+<h3 id="1-1-三端架构">1.1 三端架构</h3>
+<p>ADB 由三个组件构成，理解这三者，90% 的"玄学问题"都能解释清楚：</p>
+
+<figure class="figure arch">
+  <figcaption>图 1 · ADB 三端架构与一次命令的完整链路</figcaption>
+  <div class="arch-grid">
+    <div class="arch-side host">
+      <div class="arch-side-title"><span class="dot"></span>开发机 / CI Runner</div>
+      <div class="arch-node n1">
+        <span class="nid">①</span>
+        <div><b>adb client</b><em>你敲的每条命令 = 一个独立进程，用完即退</em></div>
+      </div>
+      <div class="arch-link"><span>本地 socket</span><code>127.0.0.1:5037</code></div>
+      <div class="arch-node n2">
+        <span class="nid">②</span>
+        <div><b>adb server</b><em>后台常驻 · 全机唯一 · 负责设备扫描与请求路由</em></div>
+      </div>
+    </div>
+    <div class="arch-mid">
+      <div class="wire-top">transport</div>
+      <div class="wire"></div>
+      <div class="wire-label">USB bulk endpoints<br><i>或</i><br>TCP 5555+（无线调试）</div>
+    </div>
+    <div class="arch-side device">
+      <div class="arch-side-title"><span class="dot"></span>Android 设备</div>
+      <div class="arch-node n3">
+        <span class="nid">③</span>
+        <div><b>adbd</b><em>以 shell 用户身份运行的 native 守护进程</em></div>
+      </div>
+      <div class="arch-link"><span>fork / exec</span></div>
+      <div class="arch-node n4">
+        <span class="nid">④</span>
+        <div><b>shell / app_process</b><em>你真正操作的系统服务与进程</em></div>
+      </div>
+    </div>
+  </div>
+  <div class="arch-note">
+    <b>为什么重要：</b><code>adb kill-server</code> 杀掉的是 ② 这个「中间人」，
+    所以它既不改变设备状态也不影响 ① 的参数 —— 这解释了它为什么能一次修好一大批「玄学问题」。
+  </div>
+</figure>
+
+<details class="raw"><summary>查看 ASCII 原图（便于复制到笔记）</summary><pre><code class="language-text">┌──────────────────────────┐
+│      开发机 / CI Runner   │
+│                          │
+│  ① adb client            │  你敲的每一条 adb 命令
+│     ($ adb install xx)   │  都是一个独立进程，用完即退
+│            │             │
+│            │ TCP 5037    │  本地回环，走 loopback
+│            ▼             │
+│  ② adb server            │  一个后台常驻进程，
+│     (常驻守护进程)         │  全机器唯一，管理所有设备连接
+│            │             │
+└────────────┼─────────────┘
+             │
+             │ ③ 传输层：USB 端点 bulk transfer
+             │    或 TCP 5555+（无线调试）
+             ▼
+┌──────────────────────────┐
+│         Android 设备      │
+│   ④ adbd (adbd daemon)   │  以 shell 用户身份运行的 native 守护进程
+│            │             │
+│            ▼             │
+│      shell / app_process │
+└──────────────────────────┘
+</code></pre></details>
+<p>三个角色各自的职责：</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>位置</th>
+<th>生命周期</th>
+<th>关键事实</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>adb client</strong></td>
+<td>开发机</td>
+<td>每条命令一个进程</td>
+<td>只负责把你的命令翻译成请求发给 server</td>
+</tr>
+<tr>
+<td><strong>adb server</strong></td>
+<td>开发机</td>
+<td>常驻后台，全局唯一</td>
+<td>监听 <strong>5037</strong>，负责设备扫描、连接管理、请求路由</td>
+</tr>
+<tr>
+<td><strong>adbd</strong></td>
+<td>设备上</td>
+<td>常驻，随设备启动</td>
+<td>监听 USB 端点；<code>adb tcpip</code> 后额外监听 <strong>5555</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>这就是为什么 <code>adb kill-server</code> 能解决一大批问题</strong>：因为它杀掉并重建的是那个"中间人"，而不是你的命令。</p>
+<p><strong>这也是为什么"adb 版本不匹配"是高危问题</strong>：client 和 server 之间是有协议的，版本不一致时 server 会被强制重启，正在跑的自动化脚本全部断链。你肯定见过这句：</p>
+<pre><code class="language-console">adb server version (41) doesn't match this client (39); killing...
+</code></pre>
+<h3 id="1-2-一次-adb-shell-ls-究竟走了哪些路">1.2 一次 <code>adb shell ls</code> 究竟走了哪些路</h3>
+<p>面试里能把这条链路说清楚的人，通常对 ADB 是真懂的：</p>
+<ol>
+<li><code>adb</code> 可执行文件启动，作为 <strong>client</strong> 读取环境变量、参数，尝试连接 <code>127.0.0.1:5037</code>。</li>
+<li>如果 server 没起来，client 会 <strong>fork 一个 server</strong>（<code>adb -L tcp:5037 fork-server server</code>）再连。</li>
+<li>server 维护一张"设备表"，每台设备一个<strong>唯一 transport</strong>（USB 上的 <code>serialno:devpath</code> 或 TCP 的 ip:port）。</li>
+<li>server 根据 <code>-s/-d/-e/-t</code> 选出目标设备，打开一条 <strong>stream（本地 socket）</strong>。</li>
+<li>server 向该设备的 adbd 发送 <code>shell:ls</code> 这样的服务请求，adbd 在设备上 fork 出 <code>sh -c ls</code>。</li>
+<li>adbd 把 stdout/stderr 通过 transport 回传，server 再回传给 client，client 写到你的终端。</li>
+<li>命令结束，client 退出；<strong>adb server 继续活着</strong>，等下一次命令。</li>
+</ol>
+<p>⚠️ 关键细节（面试高频）：<code>adb shell</code> 在设备端会分配 <strong>PTY</strong>，所以：</p>
+<ul>
+<li>输出里的 <code>\n</code> 会被翻译成 <code>\r\n</code>；</li>
+<li>二进制数据会被破坏；</li>
+<li>退出码（exit code）在旧版本上会丢失。</li>
+</ul>
+<p>这直接引出第 4.1 节的 <code>exec-out</code>。</p>
+<h3 id="1-3-端口协议与传输层">1.3 端口、协议与传输层</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>端口</th>
+<th>归属</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>5037</strong></td>
+<td>开发机 adb server</td>
+<td>固定端口，可通过 <code>ANDROID_ADB_SERVER_PORT</code> 或 <code>adb -P</code> 改</td>
+</tr>
+<tr>
+<td><strong>5555 ~ 5585</strong></td>
+<td>设备 adbd (TCP)</td>
+<td><code>adb tcpip 5555</code> 后设备监听；模拟器从 5554/5555 成对使用</td>
+</tr>
+<tr>
+<td><strong>5554</strong></td>
+<td>模拟器控制台</td>
+<td><code>telnet localhost 5554</code>，需 <code>.emulator_console_auth_token</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>USB 传输细节</strong>（高级加分项）：USB 上并没有什么"ADB 协议"，ADB 复用了 USB 的 bulk 端点。adbd 在设备侧创建一个 gadget 接口（class <code>0xFF</code>，subclass <code>0x42</code>，protocol <code>0x01</code>——这串魔术数字就是 ADB 接口的标识），开发机侧 <code>usbhost</code> 通过 libusb/WinUSB 打开这个接口，两端在 bulk in/out 端点上跑自有的帧协议。所以：</p>
+<ul>
+<li>Windows 上需要厂商 USB 驱动或 WinUSB（Zadig 替换驱动就是这个原因）；</li>
+<li>Linux 上需要 udev 规则给 USB 设备读写权限，否则出现 <code>no permissions</code>；</li>
+<li>USB 自动挂起（autosuspend）会让设备在空闲后掉线，这是设备农场的经典敌人。</li>
+</ul>
+<p><strong>传输层可替换</strong>（这是 ADB 设计最优雅的地方）：transport 抽象出 <code>read/write/close</code> 语义，于是同一套上层逻辑既能跑 USB，也能跑 TCP、也能跑模拟器的 qemu pipe。你看到的"无线调试"，本质只是加了一种 transport。</p>
+<h3 id="1-4-鉴权rsa-密钥与-unauthorized">1.4 鉴权：RSA 密钥与 unauthorized</h3>
+<p>从 Android 4.2.2 起，ADB 引入公钥鉴权，防的是"插上 USB 就能读你数据"：</p>
+<ol>
+<li>开发机首次连接时，若找不到 <code>~/.android/adbkey</code>，<strong>自动生成一对 RSA 2048 密钥</strong>（<code>adbkey</code> / <code>adbkey.pub</code>）。</li>
+<li>adbd 收到连接后，若设备尚未信任该公钥，<code>adb devices</code> 显示 <code>unauthorized</code>。</li>
+<li>手机上弹出「允许 USB 调试吗？」，勾选"一律允许"后，公钥被写入设备的 <code>/data/misc/adb/adb_keys</code>。</li>
+<li>之后每次连接走签名挑战-应答，不再弹窗。</li>
+</ol>
+<p>企业环境里的对应问题：</p>
+<ul>
+<li><strong>CI Runner 上必须固化 <code>adbkey</code></strong>，否则每次跑流水线都要人点手机授权，等于不可自动化；</li>
+<li>密钥丢失/轮换后需要重新授权，要写进运维手册；</li>
+<li><code>ADB_VENDOR_KEYS</code> 环境变量可为 OEM 场景附加厂商密钥；</li>
+<li>生产设备可通过 Device Owner 策略直接<strong>禁用 USB 调试</strong>（见 5.5）。</li>
+</ul>
+<hr>
+<h2 id="2-入门篇环境搭建与第一个命令">2. 入门篇：环境搭建与第一个命令</h2>
+<h3 id="2-1-安装-platform-tools">2.1 安装 platform-tools</h3>
+<p>ADB 属于 <code>platform-tools</code>，<strong>独立于 Android Studio</strong>，随 SDK 单独发版：</p>
+<ul>
+<li>官方地址：<code>https://developer.android.com/tools/releases/platform-tools</code></li>
+<li>解压后把目录加入 <code>PATH</code>。</li>
+<li>Windows 可用 <code>scoop install adb</code> / <code>choco install adb</code>；macOS 用 <code>brew install --cask android-platform-tools</code>；Linux 用发行版包管理器（注意版本可能偏老）。</li>
+</ul>
+<p><strong>版本检查与统一（企业第一课）</strong>：</p>
+<pre><code class="language-bash">adb version
+# Android Debug Bridge version 1.0.41
+# Version 35.0.2-android-tools
+</code></pre>
+<div class="callout danger"><div class="callout-h">🚨 铁律</div><div class="callout-b"><p><strong>铁律：全团队 / 全流水线必须用同一个 adb 版本。</strong>
+设备农场里出现 <code>device offline</code> 潮、脚本随机失败，第一嫌疑永远是 CI 镜像里的 adb 被升级到了和测试机不兼容的版本。</p></div></div>
+<p>Linux 上还需要 udev 规则（否则 <code>no permissions</code>）：</p>
+<pre><code class="language-bash"># /etc/udev/rules.d/51-android.rules
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;18d1&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;2717&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;  # 小米
+SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;12d1&quot;, MODE=&quot;0666&quot;, GROUP=&quot;plugdev&quot;  # 华为
+# 用 lsusb 查你自己的厂商 ID
+sudo udevadm control --reload-rules &amp;&amp; sudo udevadm trigger
+</code></pre>
+<p><strong>关闭 USB 自动挂起（设备农场必做）</strong>：</p>
+<pre><code class="language-bash"># 内核启动参数
+usbcore.autosuspend=-1
+# 或运行时对具体设备
+echo -1 | sudo tee /sys/bus/usb/devices/1-1/power/autosuspend
+</code></pre>
+<h3 id="2-2-设备状态全解">2.2 设备状态全解</h3>
+<pre><code class="language-bash">adb devices -l
+</code></pre>
+<p>输出的每一列/每种状态都要认识：</p>
+<pre><code class="language-console">List of devices attached
+b4d9f0a1        device product:raven model:Pixel_6_pro device:raven transport_id:3
+10.0.0.5:5555   device product:... transport_id:4
+emulator-5554   offline
+FA7A11A02345    unauthorized
+1a2b3c4d        no permissions (user in plugdev group; are your udev rules wrong?)
+</code></pre>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>状态</th>
+<th>含义</th>
+<th>典型原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>device</code></td>
+<td>正常可用</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>offline</code></td>
+<td>端口在，链路断</td>
+<td>设备休眠、USB 挂起、adb 版本不一致、server 卡死</td>
+</tr>
+<tr>
+<td><code>unauthorized</code></td>
+<td>未授权</td>
+<td>手机没点"允许"，或 adbkey 变了</td>
+</tr>
+<tr>
+<td><code>no permissions</code></td>
+<td>Linux 权限不足</td>
+<td>udev 规则缺失，或当前用户不在 plugdev 组</td>
+</tr>
+<tr>
+<td><code>bootloader</code> / <code>recovery</code> / <code>sideload</code></td>
+<td>特殊模式</td>
+<td><code>adb reboot bootloader</code> 等进入</td>
+</tr>
+<tr>
+<td><code>no permissions (verify udev rules)</code></td>
+<td>同上</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<div class="callout info"><div class="callout-h">📌 说明</div><div class="callout-b"><p><code>-l</code> 参数（list）会额外输出 <code>product/model/device/transport_id</code>，是区分"同型号多台设备"的关键。</p></div></div>
+<h3 id="2-3-目标设备的四种指定方式">2.3 目标设备的四种指定方式</h3>
+<pre><code class="language-bash">adb -d shell ...        # 只选唯一的 USB 设备（USB device）
+adb -e shell ...        # 只选唯一的模拟器（emulator）
+adb -s b4d9f0a1 ...     # 按序列号选（最常用，自动化必用）
+adb -t 3 ...            # 按 transport_id 选（同序列号多链路时救命）
+</code></pre>
+<p><strong>为什么自动化脚本必须显式指定 <code>-s</code></strong>：默认行为是"只有一台设备时才自动选中"，一旦有两台，所有命令都会报错：</p>
+<pre><code class="language-console">adb: more than one device/emulator
+</code></pre>
+<p>而设备农场里"两台"是常态。</p>
+<hr>
+<h2 id="3-基础篇日常-90-场景的命令">3. 基础篇：日常 90% 场景的命令</h2>
+<h3 id="3-1-设备与连接">3.1 设备与连接</h3>
+<pre><code class="language-bash">adb start-server                 # 启动 server
+adb kill-server                  # 杀掉 server（万能第一步）
+adb devices -l                   # 列设备
+adb get-state                    # 打印 device / offline / bootloader
+adb get-serialno                 # 打印序列号
+adb wait-for-device              # 阻塞直到有设备就绪（CI 必备）
+adb wait-for-usb-device
+adb wait-for-local-device
+adb reconnect                    # 重连（先 offline 的）
+adb reconnect offline            # 只重连 offline 的
+adb reboot                       # 重启
+adb reboot bootloader
+adb reboot recovery
+adb sideload ota.zip             # sideload 刷机包
+adb root                         # 以 root 重启 adbd（仅 userdebug/eng）
+adb unroot
+adb remount                      # 把 /system 等挂成可写（需 verity 可关）
+adb disable-verity / enable-verity
+</code></pre>
+<p><strong><code>adb wait-for-device</code> 的真实语义</strong>（面试易错点）：它只等"设备被 adbd 报告为 device 状态"，<strong>不代表系统已经启动完成、不代表可以安装应用</strong>。CI 里正确的等待姿势是组合拳：</p>
+<pre><code class="language-bash">adb wait-for-device
+# 等到 boot 完成
+until [ &quot;$(adb shell getprop sys.boot_completed 2&gt;/dev/null | tr -d '\r')&quot; = &quot;1&quot; ]; do sleep 2; done
+# 等到包管理器可用（这一步最容易被忽略）
+until adb shell pm path android &gt;/dev/null 2&gt;&amp;1; do sleep 2; done
+# 解锁屏幕、常亮
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell input keyevent 82
+adb shell svc power stayon true
+</code></pre>
+<h3 id="3-2-应用安装与卸载">3.2 应用安装与卸载</h3>
+<pre><code class="language-bash">adb install app.apk                       # 基础安装
+adb install -r app.apk                    # -r replace 覆盖安装（保留数据）
+adb install -t app.apk                    # -t 允许 test-only 包
+adb install -d app.apk                    # -d 允许降级（downgrade）
+adb install -g app.apk                    # -g 安装时授予全部运行时权限（自动化神器）
+adb install --abi arm64-v8a app.apk       # 指定 ABI（split APK 场景）
+adb install-multiple base.apk split_x.apk # 安装 split APK
+adb install-multi-package a.apk b.apk     # 一次装多个不同包
+
+adb uninstall com.example.app
+adb uninstall -k com.example.app          # -k 保留数据与缓存
+adb shell pm uninstall --user 0 com.oem.bloatware   # 免 root 卸载预装（当前用户）
+adb shell pm clear com.example.app        # 清数据（等价于&quot;恢复出厂&quot;单应用）
+</code></pre>
+<p><strong><code>-g</code> 为什么重要</strong>：Android 6.0+ 运行时权限让每次装完都要弹窗授权，UI 自动化脚本会被权限弹窗打断。<code>-g</code> 在安装时直接授予，是"让脚本稳定下来"最便宜的一招。</p>
+<p><strong>安装失败速查</strong>：</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>报错</th>
+<th>含义与处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INSTALL_FAILED_ALREADY_EXISTS</code></td>
+<td>已存在，用 <code>-r</code></td>
+</tr>
+<tr>
+<td><code>INSTALL_FAILED_VERSION_DOWNGRADE</code></td>
+<td>降级被拒，用 <code>-d</code></td>
+</tr>
+<tr>
+<td><code>INSTALL_FAILED_UPDATE_INCOMPATIBLE</code></td>
+<td>签名不一致（debug/release 混装），先 <code>uninstall</code></td>
+</tr>
+<tr>
+<td><code>INSTALL_FAILED_INSUFFICIENT_STORAGE</code></td>
+<td>空间不足，<code>adb shell df -h /data</code></td>
+</tr>
+<tr>
+<td><code>INSTALL_FAILED_USER_RESTRICTED</code></td>
+<td>厂商限制（MIUI 等），需在开发者选项里允许 USB 安装</td>
+</tr>
+<tr>
+<td><code>INSTALL_PARSE_FAILED_NO_CERTIFICATES</code></td>
+<td>APK 未签名或被篡改</td>
+</tr>
+<tr>
+<td><code>Failure [INSTALL_FAILED_TEST_ONLY]</code></td>
+<td>用 <code>-t</code></td>
+</tr>
+<tr>
+<td><code>adb: failed to finalize session</code></td>
+<td>USB 不稳/线材差/存储满，换线换口</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="3-3-文件传输">3.3 文件传输</h3>
+<pre><code class="language-bash">adb push local.txt /sdcard/Download/
+adb push ./assets/ /sdcard/app_assets/       # 目录递归
+adb pull /sdcard/log.txt ./logs/
+adb pull /data/anr ./anr_dump/               # 需 root 或 debuggable
+adb shell ls -l /sdcard/
+adb shell df -h                              # 磁盘占用
+adb shell du -sh /data/data/com.x            # 目录大小（需权限）
+</code></pre>
+<p><strong>拷不出应用私有数据怎么办</strong>（高频实战难题，见 5.5 与 6.2）：</p>
+<pre><code class="language-bash"># 方式一：debuggable 应用用 run-as
+adb exec-out run-as com.example.app cat databases/app.db &gt; app.db
+
+# 方式二：Android 10+ 用 backup/restore（需 allowBackup 或 debug 构建）
+adb shell bmgr ...
+
+# 方式三：userdebug 设备 adb root 后直接 pull
+adb root &amp;&amp; adb pull /data/data/com.example.app/ ./pkg/
+
+# 方式四：应用内加&quot;导出到 /sdcard&quot;的调试入口（最工程化的做法）
+</code></pre>
+<h3 id="3-4-shell-与进程">3.4 Shell 与进程</h3>
+<pre><code class="language-bash">adb shell                                   # 交互式（会分配 PTY）
+adb shell &quot;cmd1 &amp;&amp; cmd2&quot;
+adb shell 'cmd; echo &quot;exit=$?&quot;'             # 稳妥获取远端退出码
+adb shell ps -A                             # 全量进程
+adb shell pidof com.example.app             # 取 pid（Android 7+）
+adb shell top -n 1 -b | head -20            # 一次性 top
+adb shell kill -9 &lt;pid&gt;
+adb shell getprop                           # 全部属性
+adb shell getprop ro.build.version.sdk      # API level
+adb shell getprop ro.product.cpu.abi
+adb shell setprop log.tag.MyTag VERBOSE     # 运行时调日志级别
+adb shell dumpsys | head                    # 所有系统服务 dump
+adb shell id                                # 当前身份（shell / root）
+adb shell getenforce                        # SELinux 状态
+</code></pre>
+<p><strong><code>adb shell</code> 引号陷阱</strong>：外层引号由你的本地 shell 解释，容易和远端 shell 打架。</p>
+<pre><code class="language-bash"># ❌ 本地 shell 会先展开 $PID
+adb shell echo $PID
+# ✅ 单引号保护，交给远端
+adb shell 'echo $PID'
+# ✅ 或转义
+adb shell &quot;echo \$PID&quot;
+</code></pre>
+<h3 id="3-5-应用与组件操作">3.5 应用与组件操作</h3>
+<pre><code class="language-bash"># ---- 包管理（pm 与 cmd package 等价，后者更&quot;现代&quot;）----
+adb shell pm list packages                  # 全部
+adb shell pm list packages -3               # 仅第三方
+adb shell pm list packages -s               # 仅系统
+adb shell pm list packages -d               # 仅被禁用的
+adb shell pm list packages -u               # 含已卸载但保留数据的
+adb shell pm list packages -f com.example.app   # 显示 apk 路径
+adb shell pm path com.example.app
+adb shell cmd package list packages
+adb shell dumpsys package com.example.app | grep -E &quot;versionName|versionCode|firstInstallTime&quot;
+
+adb shell pm grant com.example.app android.permission.CAMERA
+adb shell pm revoke com.example.app android.permission.CAMERA
+adb shell pm reset-permissions
+adb shell pm disable-user --user 0 com.oem.app
+adb shell pm enable com.oem.app
+
+adb shell appops get com.example.app
+adb shell appops set com.example.app SYSTEM_ALERT_WINDOW allow
+
+# ---- Activity / Service / Broadcast ----
+adb shell am start -n com.example.app/.MainActivity
+adb shell am start -a android.intent.action.VIEW -d &quot;https://example.com&quot;
+adb shell am start -W -n com.example.app/.MainActivity   # -W 打印耗时（冷启动测量）
+adb shell am start -S -n com.example.app/.MainActivity   # -S 先 force-stop 再启（测冷启）
+adb shell am force-stop com.example.app
+adb shell am kill com.example.app                        # 温和杀（保留后台栈）
+adb shell am broadcast -a com.example.ACTION --es key value --ei num 1
+adb shell am set-debug-app -w com.example.app            # 启动即等调试器
+adb shell am clear-debug-app
+adb shell dumpsys activity activities | grep -E &quot;mResumedActivity|mFocusedApp&quot;
+adb shell dumpsys window | grep -E &quot;mCurrentFocus|mFocusedApp&quot;
+</code></pre>
+<p><strong>冷启动耗时怎么读</strong>（性能测试高频）：</p>
+<pre><code class="language-bash">adb shell am force-stop com.example.app
+adb shell am start -W -n com.example.app/.MainActivity
+# TotalTime: 412      应用自身启动耗时（最常被作为指标）
+# WaitTime:  430      含系统调度（AMS 视角的总等待）
+# ThisTime:  412      最后一个 Activity 的启动耗时
+</code></pre>
+<p>测量规范：连续测 <strong>10 次以上取中位数/P90</strong>，去掉首次（首次有 IO 缓存与 JIT/AOT 噪声），并固定 <code>wm size/density</code>、关闭动画、恒定电量与温度。</p>
+<h3 id="3-6-日志-logcat">3.6 日志 logcat</h3>
+<pre><code class="language-bash">adb logcat                                  # 实时
+adb logcat -d                               # dump 后退出（不阻塞）
+adb logcat -c                               # 清空缓冲
+adb logcat -v threadtime                    # 带时间/线程/pid（推荐默认）
+adb logcat -v time -v color
+adb logcat -b main,system,crash             # 指定缓冲区
+adb logcat -b all                           # 全部缓冲区
+adb logcat -s MyTag                         # 只看某 TAG
+adb logcat MyTag:D *:S                      # 只要 MyTag 的 D 以上
+adb logcat --pid=$(adb shell pidof -s com.example.app)
+adb logcat -G 16M                           # 扩大缓冲区（抓崩溃必备）
+adb logcat -f /sdcard/log.txt               # 直接落盘到设备
+adb logcat -t 500                           # 最近 500 行
+adb logcat *:E                              # 只看 Error
+</code></pre>
+<p><strong>缓冲区（buffer）语义</strong>（面试常问）：</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>buffer</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main</code></td>
+<td>应用日志（<code>Log.d/i/w/e</code>）</td>
+</tr>
+<tr>
+<td><code>system</code></td>
+<td>系统服务日志</td>
+</tr>
+<tr>
+<td><code>crash</code></td>
+<td>崩溃日志（Java 崩溃也常在这里）</td>
+</tr>
+<tr>
+<td><code>events</code></td>
+<td>结构化事件（<code>EventLog</code>，二进制格式，需 <code>-b events</code> 并用 <code>logcat -b events -v ...</code>）</td>
+</tr>
+<tr>
+<td><code>radio</code></td>
+<td>通信相关</td>
+</tr>
+<tr>
+<td><code>kernel</code></td>
+<td>内核（部分设备/权限下可见）</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>抓 Java 崩溃</strong>：</p>
+<pre><code class="language-bash">adb logcat -b crash -d | grep -A 40 &quot;FATAL EXCEPTION&quot;
+# 或
+adb logcat -d AndroidRuntime:E *:S
+</code></pre>
+<p><strong>抓 Native 崩溃（tombstone）</strong>：需要 root 或 userdebug 设备。</p>
+<pre><code class="language-bash">adb shell ls -l /data/tombstones/
+adb shell cat /data/tombstones/tombstone_00
+# 或者直接看 logcat 中的 DEBUG / libc 段
+adb logcat -b crash -d | grep -A 60 &quot;DEBUG&quot;
+</code></pre>
+<p><strong>一次性收集完整现场</strong>：<code>adb bugreport</code> 是真正的重武器。</p>
+<pre><code class="language-bash">adb bugreport ./bugreport-$(date +%s)
+# Android 7+ 支持目录参数，产出 zip，内含：
+#   bugreport-*.txt     全量 dumpsys + logcat + 属性
+#   FS/data/anr/        ANR traces
+#   FS/data/tombstones/ native 崩溃
+#   proto/              二进制 proto 格式（更小更全）
+</code></pre>
+<div class="callout tip"><div class="callout-h">💡 面试视角</div><div class="callout-b"><p>面试加分：知道 <strong>bugreport 里的 proto 格式</strong>才能拿到 <code>dumpsys</code> 的完整字段（文本 <code>dumpsys</code> 常被截断）。平台化诊断系统通常解析 proto。</p></div></div>
+<h3 id="3-7-模拟输入">3.7 模拟输入</h3>
+<pre><code class="language-bash">adb shell input text &quot;hello%sworld&quot;          # 空格用 %s 转义
+adb shell input keyevent 3                   # HOME
+adb shell input keyevent 4                   # BACK
+adb shell input keyevent 26                  # POWER
+adb shell input keyevent 82                  # MENU（常用于解锁）
+adb shell input keyevent KEYCODE_WAKEUP      # 224
+adb shell input tap 540 1200
+adb shell input swipe 540 1600 540 400 300   # x1 y1 x2 y2 持续时间ms
+adb shell input keyevent --longpress 3
+adb shell input roll 0 100                   # 滚轮
+</code></pre>
+<p><strong>注意</strong>：<code>input</code> 注入的是 InputDispatcher 层事件，很多安全页面（支付、指纹、部分银行 App）会通过 <code>FLAG_SECURE</code> 或安全键盘屏蔽，这是"自动化点不动"的常见根因之一。</p>
+<h3 id="3-8-屏幕与录制">3.8 屏幕与录制</h3>
+<pre><code class="language-bash"># 截图
+adb shell screencap -p /sdcard/s.png &amp;&amp; adb pull /sdcard/s.png .
+adb exec-out screencap -p &gt; s.png           # 更优：不落盘、二进制安全
+
+# 录屏
+adb shell screenrecord /sdcard/demo.mp4 --time-limit 180 --size 720x1280 --bit-rate 4000000 --verbose
+adb shell screenrecord --bugreport /sdcard/demo.mp4   # 叠帧时间戳，用于性能分析
+
+# 分辨率与密度（兼容性测试神器）
+adb shell wm size                           # 当前
+adb shell wm size 1080x1920                 # 临时改分辨率
+adb shell wm density 320
+adb shell wm size reset
+adb shell wm density reset
+
+# 动画开关（性能测试必须先关）
+adb shell settings put global window_animation_scale 0
+adb shell settings put global transition_animation_scale 0
+adb shell settings put global animator_duration_scale 0
+</code></pre>
+<div class="callout warn"><div class="callout-h">⚠️ 注意</div><div class="callout-b"><p><strong>Windows PowerShell 二进制陷阱（企业级高频坑）</strong>
+PowerShell 5 的 <code>&gt;</code> 重定向会把原生命令输出按文本解码再编码，<code>adb exec-out screencap -p &gt; s.png</code> 产出的 PNG <strong>是损坏的</strong>（多平台自动化脚本挂在这一行上）。三种解法：</p></div></div>
+<pre><code class="language-powershell">cmd /c &quot;adb exec-out screencap -p &gt; s.png&quot;                      # 交给 cmd 处理重定向
+adb exec-out screencap -p | Set-Content -AsByteStream s.png     # PS 6+ 字节流写入
+adb shell screencap -p /sdcard/s.png; adb pull /sdcard/s.png .  # 最稳：设备落盘再拉取
+</code></pre>
+<hr>
+<h2 id="4-进阶篇让它变快变稳变自动">4. 进阶篇：让它变快、变稳、变自动</h2>
+<h3 id="4-1-adb-shell-vs-adb-exec-out二进制安全的关键">4.1 <code>adb shell</code> vs <code>adb exec-out</code>：二进制安全的关键</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>维度</th>
+<th><code>adb shell</code></th>
+<th><code>adb exec-out</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>是否分配 PTY</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr>
+<td>换行处理</td>
+<td><code>\n</code> → <code>\r\n</code></td>
+<td>原样</td>
+</tr>
+<tr>
+<td>二进制安全</td>
+<td>❌ 会被破坏</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>交互式命令（<code>su</code>、<code>vi</code>）</td>
+<td>✅ 可用</td>
+<td>❌ 不可用</td>
+</tr>
+<tr>
+<td>适用场景</td>
+<td>人工调试</td>
+<td>脚本、取二进制、管道</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>实战对照</strong>：</p>
+<pre><code class="language-bash"># ❌ 取数据库，文件会因 CRLF 翻译而损坏
+adb shell &quot;cat /sdcard/a.db&quot; &gt; a.db
+# ✅
+adb exec-out &quot;cat /sdcard/a.db&quot; &gt; a.db
+
+# ✅ 免 root 取 debuggable 应用私有文件
+adb exec-out run-as com.example.app cat databases/app.db &gt; app.db
+</code></pre>
+<p><strong>行尾处理</strong>（跨平台脚本必修课）：<code>adb shell getprop xxx</code> 的输出带 <code>\r</code>，在 Linux 脚本里比较会失败：</p>
+<pre><code class="language-bash"># ❌ 永远为 false
+[ &quot;$(adb shell getprop sys.boot_completed)&quot; = &quot;1&quot; ]
+# ✅
+[ &quot;$(adb shell getprop sys.boot_completed | tr -d '\r')&quot; = &quot;1&quot; ]
+</code></pre>
+<h3 id="4-2-端口转发forward-与-reverse">4.2 端口转发：<code>forward</code> 与 <code>reverse</code></h3>
+<p>这是从"会用 ADB"跨越到"懂 ADB"的分水岭。</p>
+<pre><code class="language-bash"># forward：开发机 → 设备（访问设备上的服务）
+adb forward tcp:6100 tcp:7100
+adb forward tcp:6100 localabstract:scrcpy      # unix domain socket
+adb forward --list
+adb forward --remove tcp:6100
+adb forward --remove-all
+
+# reverse：设备 → 开发机（让设备访问你电脑上的服务）
+adb reverse tcp:8081 tcp:8081
+adb reverse --list
+adb reverse --remove-all
+</code></pre>
+<p>方向记忆法：</p>
+
+<figure class="figure flow">
+  <figcaption>图 2 · forward 与 reverse 的方向差异</figcaption>
+  <div class="flow-row fwd">
+    <span class="tag">forward</span>
+    <span class="box">主机浏览器<br><i>localhost:6100</i></span>
+    <span class="arrow">→</span>
+    <span class="box mid">adb server</span>
+    <span class="arrow">→</span>
+    <span class="box">设备上的服务<br><i>设备:7100</i></span>
+    <span class="use">用途：scrcpy、WebView 调试、访问设备内服务</span>
+  </div>
+  <div class="flow-row rev">
+    <span class="tag">reverse</span>
+    <span class="box">设备上的 App<br><i>localhost:8081</i></span>
+    <span class="arrow">→</span>
+    <span class="box mid">adb server</span>
+    <span class="arrow">→</span>
+    <span class="box">你电脑上的服务<br><i>主机:8081</i></span>
+    <span class="use">用途：RN/Metro、Mock Server、抓包代理</span>
+  </div>
+</figure>
+
+<details class="raw"><summary>查看 ASCII 原图（便于复制到笔记）</summary><pre><code class="language-text">forward:   [你的浏览器] → localhost:6100 → adb → 设备:7100
+reverse:   [设备上的 App] → localhost:8081 → adb → 你电脑:8081
+</code></pre></details>
+<p><strong><code>reverse</code> 为什么是企业级必备</strong>：</p>
+<ol>
+<li><strong>React Native / Metro</strong>：真机连开发机 <code>8081</code>，官方推荐就是 <code>adb reverse tcp:8081 tcp:8081</code>。</li>
+<li><strong>Mock Server / 测试桩</strong>：让真机访问开发机上跑的 Mock 服务，无需修改 App 的 baseUrl，也无需设备与开发机同网段。</li>
+<li><strong>抓包</strong>：<code>adb reverse tcp:8888 tcp:8888</code> 让设备流量打到你电脑的 Charles/mitmproxy，<strong>不用配 WiFi 代理、不用装证书到系统区</strong>（但 HTTPS 解密仍需证书）。</li>
+<li><strong>免同网段</strong>：设备在 USB 上、开发机在 VPN 里，<code>reverse</code> 照样通。</li>
+</ol>
+<div class="callout tip"><div class="callout-h">💡 面试视角</div><div class="callout-b"><p>面试题：<strong>"设备连不上你电脑上的测试服务，怎么办？"</strong> 答 <code>adb reverse</code> 的候选人，和答"把电脑 IP 填到 App 里"的候选人，不在一个水平线上。</p></div></div>
+<h3 id="4-3-无线调试从-tcp-到-android-11-配对">4.3 无线调试：从 TCP 到 Android 11 配对</h3>
+<p><strong>经典方式（Android 10 及以下，或已知端口）</strong>：</p>
+<pre><code class="language-bash"># 1. 先用 USB 连上，让设备在 5555 监听
+adb tcpip 5555
+# 2. 拔掉 USB（可选），连接
+adb connect 192.168.1.100:5555
+adb devices
+# 3. 断开
+adb disconnect 192.168.1.100:5555
+# 4. 需要 root 时可持久化
+adb shell setprop persist.adb.tcp.port 5555
+</code></pre>
+<p><strong>Android 11+ 无线调试（带配对码，mDNS 发现）</strong>：</p>
+<pre><code class="language-bash"># 手机：开发者选项 → 无线调试 → 使用配对码配对设备
+# 拿到 IP:PORT（配对端口）与 6 位配对码
+adb pair 192.168.1.100:37123
+# 输入 6 位码 → 配对成功（密钥交换）
+
+# 然后用「IP 和端口」页面显示的另一个端口连接
+adb connect 192.168.1.100:5555
+
+# mDNS 自动发现（需网络支持 mDNS）
+adb mdns check
+adb mdns services
+</code></pre>
+<p><strong>为什么 Android 11 要引入配对</strong>：Android 10 及以前，任何人 <code>adb connect</code> 到你的 5555 端口都能尝试连接，安全性依赖"设备弹窗授权"，而部分设备在 TCP 模式下不会弹窗（等价于无鉴权）。Android 11 强制引入 TLS + 配对码，才能建立可信链路。</p>
+<p><strong>无线调试的真实代价（企业级视角）</strong>：</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>USB</th>
+<th>无线</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>稳定性</td>
+<td>高（有线）</td>
+<td>受 WiFi 干扰，易掉线</td>
+</tr>
+<tr>
+<td>吞吐（安装大 APK / 传日志）</td>
+<td>高</td>
+<td>明显低，安装慢 2-5 倍</td>
+</tr>
+<tr>
+<td>规模</td>
+<td>受 USB 口/供电限制</td>
+<td>理论上不受限，但受 AP/信道限制</td>
+</tr>
+<tr>
+<td>供电</td>
+<td>直接供电</td>
+<td>需另配充电，长期测试有电量风险</td>
+</tr>
+<tr>
+<td>适用</td>
+<td>设备农场主力</td>
+<td>免线、演示、远程、跨地域真机云</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>结论</strong>：规模化农场仍以 <strong>USB + 高品质有源 Hub + 独立供电</strong> 为主，无线调试用于灵活接入和远程场景。</p>
+<h3 id="4-4-性能与诊断工具箱">4.4 性能与诊断工具箱</h3>
+<pre><code class="language-bash"># ---- 内存 ----
+adb shell dumpsys meminfo com.example.app
+adb shell dumpsys meminfo -d com.example.app       # 更细
+adb shell dumpsys procstats --hours 3              # 一段时间内的内存行为
+adb shell dumpsys meminfo                          # 全系统
+
+# ---- CPU / 帧率 ----
+adb shell dumpsys cpuinfo
+adb shell dumpsys gfxinfo com.example.app
+adb shell dumpsys gfxinfo com.example.app framestats   # 每帧明细（jank 分析）
+adb shell dumpsys SurfaceFlinger --latency &lt;layer&gt;     # 帧延迟直方图
+
+# ---- 电量 ----
+adb shell dumpsys batterystats --reset
+# ... 跑业务 ...
+adb shell dumpsys batterystats com.example.app &gt; battery.txt
+adb shell dumpsys battery                          # 当前状态（可 set 造假）
+adb shell dumpsys battery set level 50
+adb shell dumpsys battery unplug                   # 模拟拔电
+adb shell dumpsys battery reset
+adb shell dumpsys deviceidle force-idle            # 强制 Doze，测后台限制
+adb shell dumpsys deviceidle unforce
+
+# ---- 网络 ----
+adb shell dumpsys netstats detail
+adb shell dumpsys connectivity
+adb shell dumpsys wifi | head -50
+
+# ---- 启动与 ANR ----
+adb shell dumpsys activity exit-info com.example.app    # Android 11+ 历史退出原因
+adb shell dumpsys dropbox --print | grep -A 30 &quot;data_app_anr&quot;
+adb shell cat /data/anr/traces.txt                      # 需权限，新版路径为 /data/anr/
+adb shell ls /data/anr/
+
+# ---- 系统级追踪（现代方式）----
+adb shell perfetto -o /data/misc/perfetto-traces/trace -t 10s \
+  sched freq idle am wm gfx view binder_driver
+adb pull /data/misc/perfetto-traces/trace ./trace.perfetto-trace
+# 用 ui.perfetto.dev 打开分析
+
+# ---- CPU 采样（native 热点）----
+adb shell simpleperf record -p $(adb shell pidof com.example.app) --duration 10 -o /data/local/tmp/perf.data
+adb pull /data/local/tmp/perf.data .
+
+# ---- 编译状态（性能基线必做）----
+adb shell cmd package compile -m speed -f com.example.app   # 强制 AOT 编译
+adb shell cmd package compile -m verify -f com.example.app  # 重置
+</code></pre>
+<p><strong>性能测试的三条纪律</strong>（面试常问"你怎么保证数据可信"）：</p>
+<ol>
+<li><strong>固定编译状态</strong>：<code>speed</code> / <code>speed-profile</code> / <code>verify</code> 三种模式的差距可达 30%+，不固定就等于随机数。</li>
+<li><strong>固定环境</strong>：分辨率、密度、动画、亮度、电量、温度、后台应用、网络。</li>
+<li><strong>统计而非单次</strong>：≥10 次，报中位数 + P90 + 抖动；去掉冷启动首帧的首次 IO 影响。</li>
+</ol>
+<h3 id="4-5-自动化测试接口">4.5 自动化测试接口</h3>
+<pre><code class="language-bash"># ---- Instrumentation 测试（Espresso / AndroidJUnitRunner）----
+adb shell am instrument -w \
+  -e class com.example.test.LoginTest#testLoginSuccess \
+  com.example.test/androidx.test.runner.AndroidJUnitRunner
+
+# 常用参数
+#   -w                等待测试结束（必备，否则立即返回）
+#   -r                原始输出（便于解析）
+#   -e debug true     等调试器
+#   -e coverage true  覆盖率
+#   -e package com.example.test.ui  只跑某个包
+
+# ---- 输出解析（CI 里靠这个判断成败）----
+# OK (2 tests)                       → 成功
+# FAILURES!!!                       → 失败
+# INSTRUMENTATION_FAILED            → 崩溃/超时，与断言失败区分开！
+</code></pre>
+<div class="callout warn"><div class="callout-h">⚠️ 注意</div><div class="callout-b"><p><strong>企业级陷阱</strong>：CI 里必须区分 <strong>"断言失败"</strong> 和 <strong>"设备/框架异常"</strong>（<code>INSTRUMENTATION_FAILED</code>、<code>Process crashed</code>、超时）。混在一起，会导致"测试不稳定"的锅永远甩给开发。平台化方案是给退出码分层：用例失败 = 1，基础设施失败 = 2。</p></div></div>
+<pre><code class="language-bash"># ---- Monkey 稳定性压测 ----
+adb shell monkey -p com.example.app \
+  --pct-syskeys 0 --pct-appswitch 5 \
+  --throttle 200 --ignore-crashes --ignore-timeouts \
+  --monitor-native-crashes -v 50000 \
+  &gt; monkey.log 2&gt;&amp;1
+
+# ---- UI 层自动化框架的底层 ----
+# Appium      → adb + UiAutomator2/Espresso driver
+# uiautomator2(openatx) → 推送 agent apk，走 adb 转发
+# Airtest/Poco → adb + 图像识别/poco-sdk
+# scrcpy      → 推送 server.jar，adb forward localabstract:scrcpy
+</code></pre>
+<h3 id="4-6-ui-自动化底层uiautomator-dump-与-getevent">4.6 UI 自动化底层：uiautomator dump 与 getevent</h3>
+<pre><code class="language-bash"># dump 当前界面层级
+adb shell uiautomator dump /sdcard/ui.xml
+adb pull /sdcard/ui.xml .
+# 只 dump 指定包
+adb shell uiautomator dump --compressed /sdcard/ui.xml
+
+# 查看当前焦点窗口（写脚本定位弹窗必用）
+adb shell dumpsys window | grep -E &quot;mCurrentFocus|mFocusedApp&quot;
+
+# 原始触摸事件（逆向坐标/手势调参用）
+adb shell getevent -lt /dev/input/event3
+
+# 屏幕物理信息
+adb shell wm size
+adb shell dumpsys display | grep -E &quot;mBaseDisplayInfo|real&quot;
+</code></pre>
+<div class="callout warn"><div class="callout-h">⚠️ 注意</div><div class="callout-b"><p><strong>坐标系陷阱（面试/实战高频）</strong>：<code>uiautomator dump</code> 给的是 <strong>屏幕逻辑坐标（px）</strong>，而 <code>input tap</code> 用的也是 px，两者一致；但如果你改了 <code>wm size</code>，<code>screencap</code> 出来的图片尺寸和 <code>input</code> 的坐标系可能不一致——这是"脚本在本机跑通、在农场机器上点偏了"的经典原因。</p></div></div>
+<hr>
+<h2 id="5-企业级篇把-adb-变成生产力基础设施">5. 企业级篇：把 ADB 变成生产力基础设施</h2>
+<h3 id="5-1-企业里-adb-的三类落地场景">5.1 企业里 ADB 的三类落地场景</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>关键诉求</th>
+<th>典型技术栈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>研发自助</strong></td>
+<td>快、免配置、多人抢设备</td>
+<td>设备占用锁、web adb、远程投屏（scrcpy）</td>
+</tr>
+<tr>
+<td><strong>CI/CD 流水线</strong></td>
+<td>稳定、可复现、失败可归因</td>
+<td>Docker + Jenkins/GitLab CI + 设备池</td>
+</tr>
+<tr>
+<td><strong>真机云 / 设备农场</strong></td>
+<td>高密度、自愈、多租户隔离</td>
+<td>DeviceFarmer(stf) 或自研调度 + ADB 网关</td>
+</tr>
+<tr>
+<td><strong>企业设备管理（EMM/MDM）</strong></td>
+<td>合规、锁定、防调试</td>
+<td>Device Owner (<code>dpm</code>) + Android Enterprise</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>核心洞察</strong>：单机 <code>adb</code> 是工具，规模化后 <code>adb</code> 变成了<strong>一个需要被调度、被隔离、被监控的资源</strong>。企业级工作的本质，就是给它加上 <strong>分配、隔离、自愈、可观测</strong> 四件套。</p>
+<h3 id="5-2-cicd-集成从-docker-到设备农场">5.2 CI/CD 集成：从 Docker 到设备农场</h3>
+<p><strong>方案 A：容器直通 USB（简单，但脆弱）</strong></p>
+<pre><code class="language-bash">docker run --privileged \
+  -v /dev/bus/usb:/dev/bus/usb \
+  -v $PWD:/work \
+  android-ci-image
+</code></pre>
+<p>问题：容器内 adb 版本必须与外层一致；<code>/dev/bus/usb</code> 热插拔需要 <code>--privileged</code>（安全隐患）；USB 掉线容器感知不到。</p>
+<p><strong>方案 B：容器复用宿主 adb server（推荐，最省心）</strong></p>
+<pre><code class="language-bash"># 宿主先起 server（保持常驻），容器只跑 client 连过去
+# 宿主：
+adb start-server
+# 容器：
+adb -H host.docker.internal -P 5037 devices
+</code></pre>
+<p>优势：<strong>完全绕开 USB 直通</strong>，容器里连 <code>adb</code> 二进制都可以精简；设备管理与容器解耦；多个容器共享设备池（靠 <code>-s</code> 隔离）。
+注意：需要 <code>--add-host=host.docker.internal:host-gateway</code>（Linux）或 Docker Desktop 默认支持。</p>
+<p><strong>方案 C：设备农场 API（规模化终局）</strong></p>
+<ul>
+<li>自建：DeviceFarmer/stf、ATX-server、OpenSTF 衍生方案。</li>
+<li>云厂商：Firebase Test Lab、AWS Device Farm、BrowserStack App Automate、Sauce Labs、阿里云 EMAS/移动测试、腾讯 WeTest、华为云。</li>
+<li>自研调度层：设备注册 → 健康检查 → 租约分配 → 端口池 → 任务下发 → 日志/产物回收 → 释放。</li>
+</ul>
+<p><strong>一份可用的 CI 脚本骨架（Bash）</strong>：</p>
+<pre><code class="language-bash">#!/usr/bin/env bash
+set -Eeuo pipefail
+
+SERIAL=&quot;${ANDROID_SERIAL:?must set ANDROID_SERIAL}&quot;
+APK=&quot;${1:?usage: run.sh app.apk}&quot;
+PKG=&quot;com.example.app&quot;
+RUNNER=&quot;com.example.app.test/androidx.test.runner.AndroidJUnitRunner&quot;
+ADB=&quot;adb -s ${SERIAL}&quot;
+
+cleanup() {
+  # 无论成败都回收设备，避免农场&quot;僵尸占用&quot;
+  ${ADB} shell am force-stop &quot;${PKG}&quot; || true
+  ${ADB} shell wm size reset || true
+  ${ADB} shell wm density reset || true
+  ${ADB} reverse --remove-all || true
+}
+trap cleanup EXIT
+
+echo &quot;== 0. 确认设备 ==&quot;
+&quot;${ADB}&quot; wait-for-device
+for i in $(seq 1 60); do
+  [ &quot;$(${ADB} shell getprop sys.boot_completed 2&gt;/dev/null | tr -d '\r')&quot; = &quot;1&quot; ] &amp;&amp; break
+  sleep 2
+done
+until ${ADB} shell pm path android &gt;/dev/null 2&gt;&amp;1; do sleep 2; done
+${ADB} shell input keyevent KEYCODE_WAKEUP || true
+${ADB} shell svc power stayon true
+
+echo &quot;== 1. 环境固化 ==&quot;
+${ADB} shell settings put global window_animation_scale 0
+${ADB} shell settings put global transition_animation_scale 0
+${ADB} shell settings put global animator_duration_scale 0
+${ADB} shell wm size 1080x1920
+${ADB} shell wm density 420
+
+echo &quot;== 2. 安装 ==&quot;
+${ADB} install -r -g -t &quot;${APK}&quot; || { echo &quot;INFRA_FAIL install&quot;; exit 2; }
+
+echo &quot;== 3. 跑测试 ==&quot;
+OUT=&quot;$(mktemp)&quot;
+timeout 1800 ${ADB} shell am instrument -w -r &quot;${RUNNER}&quot; | tee &quot;${OUT}&quot; || true
+
+if grep -q &quot;OK (&quot; &quot;${OUT}&quot;; then
+  echo &quot;PASS&quot;; exit 0
+elif grep -q &quot;FAILURES!!!&quot; &quot;${OUT}&quot;; then
+  echo &quot;TEST_FAIL&quot;; exit 1
+else
+  echo &quot;INFRA_FAIL instrumentation crashed/timeout&quot;
+  ${ADB} logcat -b crash -d | tail -200
+  exit 2
+fi
+</code></pre>
+<p><strong>关键设计点</strong>（面试时讲这些，价值远超"我会写脚本"）：</p>
+<ol>
+<li><code>set -Eeuo pipefail</code> + <code>trap cleanup EXIT</code>：<strong>保证设备一定被释放</strong>。</li>
+<li><strong>分层退出码</strong>（0/1/2）：让流水线能区分"业务失败"与"环境失败"，这直接决定告警该发给谁。</li>
+<li><strong>显式 <code>-s ${SERIAL}</code></strong>：并发场景下唯一正确的姿势。</li>
+<li><strong>等待三连</strong>（boot_completed / pm 可用 / 解锁常亮）：消除 80% 的"偶发失败"。</li>
+<li><strong>环境固化</strong>：动画、分辨率、密度，保证跨机器结果可比。</li>
+</ol>
+<h3 id="5-3-设备高可用断线自愈守护进程">5.3 设备高可用：断线自愈守护进程</h3>
+<p>企业级农场最常见的故障不是"设备坏了"，而是<strong>设备'看起来在'但实际不可用</strong>。你需要一个守护进程持续做健康检查并自愈。</p>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# adb-watchdog.sh —— 轻量设备健康守护（生产环境建议用 Python/Go 重写并接入监控）
+set -uo pipefail
+INTERVAL=15
+LOG=/var/log/adb-watchdog.log
+
+log() { echo &quot;[$(date '+%F %T')] $*&quot; | tee -a &quot;$LOG&quot;; }
+
+health_check() {           # $1 = serial
+  local s=&quot;$1&quot;
+  adb -s &quot;$s&quot; get-state 2&gt;/dev/null | grep -q '^device$' || return 1
+  # 真正打一次命令，验证链路可用（关键！）
+  adb -s &quot;$s&quot; shell 'echo ok' 2&gt;/dev/null | tr -d '\r' | grep -q '^ok$' || return 1
+  return 0
+}
+
+while true; do
+  # 1. server 层面的整体健康
+  if ! adb devices &gt;/dev/null 2&gt;&amp;1; then
+    log &quot;adb server 无响应，重启 server&quot;
+    adb kill-server; sleep 2; adb start-server; sleep 3
+    continue
+  fi
+
+  # 2. 逐个设备
+  while read -r line; do
+    serial=&quot;$(echo &quot;$line&quot; | awk '{print $1}')&quot;
+    state=&quot;$(echo &quot;$line&quot; | awk '{print $2}')&quot;
+    [ &quot;$serial&quot; = &quot;List&quot; ] &amp;&amp; continue
+    [ -z &quot;${serial:-}&quot; ] &amp;&amp; continue
+
+    case &quot;$state&quot; in
+      device)
+        if ! health_check &quot;$serial&quot;; then
+          log &quot;$serial 状态为 device 但命令不通 → reconnect&quot;
+          adb -s &quot;$serial&quot; reconnect || true
+        fi
+        ;;
+      offline)
+        log &quot;$serial offline → reconnect offline&quot;
+        adb reconnect offline || true
+        ;;
+      unauthorized)
+        log &quot;$serial 未授权（需人工）&quot;
+        ;;
+      *)
+        log &quot;$serial 异常状态: $state&quot;
+        ;;
+    esac
+  done &lt; &lt;(adb devices | tail -n +2)
+
+  # 3. 周期性整理（防 server 长期运行状态泄漏）
+  #    生产建议：每天低峰期重启一次 server，成本极低、收益明显
+  sleep &quot;$INTERVAL&quot;
+done
+</code></pre>
+<p><strong>企业级自愈的分层策略</strong>（讲清这个层次，面试直接拉满）：</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>层级</th>
+<th>动作</th>
+<th>触发条件</th>
+<th>成本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1 重连</td>
+<td><code>adb reconnect &lt;serial&gt;</code></td>
+<td>单设备 offline</td>
+<td>秒级</td>
+</tr>
+<tr>
+<td>L2 重启 server</td>
+<td><code>adb kill-server &amp;&amp; adb start-server</code></td>
+<td>多设备同时异常 / server 无响应</td>
+<td>数秒，影响全机</td>
+</tr>
+<tr>
+<td>L3 复位 USB</td>
+<td><code>usbreset</code> / <code>uhubctl</code> 断电该口</td>
+<td>reconnect 无效</td>
+<td>秒级，需硬件支持</td>
+</tr>
+<tr>
+<td>L4 重启设备</td>
+<td><code>adb reboot</code></td>
+<td>系统卡死</td>
+<td>分钟级</td>
+</tr>
+<tr>
+<td>L5 人工介入</td>
+<td>工单告警</td>
+<td>硬件故障</td>
+<td>小时级</td>
+</tr>
+</tbody>
+</table></div>
+<p>加分项：<strong>用带独立开关的 USB Hub（如支持 <code>uhubctl</code> 的 Hub）</strong>，就能实现 L3 的"按口断电重启"，这是自建设备农场最值钱的硬件选型决策之一。</p>
+<h3 id="5-4-并发与隔离一台机器带多少台设备">5.4 并发与隔离：一台机器带多少台设备</h3>
+<p><strong>现实数字</strong>（经验值，随 USB 控制器与设备型号浮动）：</p>
+<ul>
+<li>理论：USB 2.0 总线 127 地址；USB 3.0 控制器通常挂在独立 xHCI 上。</li>
+<li>实践：<strong>单台 Linux 机器 16-32 台真机</strong>是舒适区；超过后安装失败率、掉线率显著上升。</li>
+<li>瓶颈不在 CPU，而在 <strong>USB 控制器带宽 + 供电 + 内核枚举稳定性</strong>。</li>
+</ul>
+<p><strong>隔离的关键手段</strong>：</p>
+<pre><code class="language-bash"># 1. 每个任务用独立 adb server（端口池）——最强隔离，避免 kill-server 互相伤害
+ANDROID_ADB_SERVER_PORT=5041 adb devices
+ANDROID_ADB_SERVER_PORT=5042 adb devices
+# 注意：不同 server 各自扫描设备，会重复占用 USB！仅在&quot;故障隔离&quot;必要时使用，
+#      常规并发请用单 server + `-s` 隔离。
+
+# 2. 端口转发池：每个任务分配独立本机端口，避免 6100 冲突
+adb -s &quot;$SERIAL&quot; forward tcp:$((6100 + TASK_ID)) tcp:7912
+
+# 3. reverse 端口同理
+adb -s &quot;$SERIAL&quot; reverse tcp:$((8081 + TASK_ID)) tcp:8081
+
+# 4. 任务级资源锁（文件锁是最简单可靠的实现）
+exec 9&gt;&quot;/tmp/adb-lock-${SERIAL}&quot;
+flock -w 600 9 || { echo &quot;设备被占用&quot;; exit 3; }
+</code></pre>
+<p><strong>为什么"单 server + <code>-s</code>" 优于 "多 server"</strong>：每个 adb server 都独立枚举 USB 设备，多个 server 会争抢同一物理设备句柄，导致 <code>device busy</code> / <code>offline</code> 潮。<strong>隔离靠 <code>-s</code> + 端口池 + 锁，不靠多 server。</strong></p>
+<h3 id="5-5-安全与合规别让-adb-成为后门">5.5 安全与合规：别让 ADB 成为后门</h3>
+<p>ADB 的权限极高——<code>shell</code> 用户的权限在不少 ROM 上等同半个 root（可 <code>am</code>/<code>pm</code>/<code>dumpsys</code>/读写 <code>/sdcard</code>）。企业里必须管起来。</p>
+<p><strong>风险清单</strong>：</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>风险</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>未授权设备接入</td>
+<td>员工把手机插上就跑 <code>adb pull /sdcard</code>，可拷走照片/文档</td>
+</tr>
+<tr>
+<td>调试桥被劫持</td>
+<td>恶意软件拉起 adb server 或占用 5037 端口</td>
+</tr>
+<tr>
+<td>生产设备可调试</td>
+<td>忘记关 USB 调试就出厂 → 物理接触即数据泄露</td>
+</tr>
+<tr>
+<td>无线调试暴露</td>
+<td><code>tcpip 5555</code> 后同网段可扫描连接</td>
+</tr>
+<tr>
+<td>adbkey 泄露</td>
+<td>CI 密钥若泄漏，攻击者可伪装成可信主机</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>加固手段（按场景）</strong>：</p>
+<pre><code class="language-bash"># 1. 企业设备（EMM/MDM）：Device Owner 直接禁用调试
+adb shell dpm set-device-owner com.example.mdm/.AdminReceiver
+# 设备上会要求：无已登录账号、无多用户、未启用其他 Device Owner
+# 之后通过 DevicePolicyManager 设置：
+#   DISALLOW_DEBUGGING_FEATURES          → 禁用 USB 调试
+#   DISALLOW_CONFIG_CREDENTIALS
+#   DISALLOW_INSTALL_UNKNOWN_SOURCES
+#   setStatusBarDisabled / lockTaskMode  → Kiosk 模式
+
+# 2. 关闭无线调试遗留状态
+adb usb                       # 切回 USB 模式，关闭 TCP 监听
+
+# 3. 检查是否有非预期调试连接
+adb shell getprop service.adb.tcp.port
+adb shell netstat -anp 2&gt;/dev/null | grep 5555
+
+# 4. CI 侧最小化权限
+#    - 专用测试机，不放业务/个人数据
+#    - adbkey 放在受控 secrets 中，按 Runner 隔离
+#    - 测试完成后 adb usb；不长期保留 tcpip 状态
+</code></pre>
+<p><strong>合规视角</strong>：涉及用户数据的真机测试，需要有<strong>数据最小化</strong>意识——<code>adb pull /sdcard</code> 之前先确认这不是真实用户设备；测试日志里避免落明文 token/手机号。</p>
+<h3 id="5-6-可观测性设备指标与日志采集">5.6 可观测性：设备指标与日志采集</h3>
+<p>一个成熟的设备平台至少采集四类数据：</p>
+<pre><code class="language-bash"># ① 设备在线率（你的 SLO 核心指标）
+adb devices | grep -c &quot;device$&quot;
+
+# ② 设备健康（电量、温度、存储——低于阈值自动隔离出池）
+adb shell dumpsys battery | grep -E &quot;level|temperature&quot;
+adb shell df /data | tail -1
+adb shell cat /sys/class/thermal/thermal_zone0/temp
+
+# ③ 系统负载（判断是不是机器侧问题）
+adb shell cat /proc/loadavg
+adb shell dumpsys cpuinfo | head
+
+# ④ 全量现场（失败任务必收）
+adb logcat -b all -d -v threadtime &gt; logcat_all.txt
+adb bugreport ./bugreport
+adb shell dumpsys activity exit-info com.example.app &gt; exit_info.txt
+</code></pre>
+<p><strong>关键指标建议</strong>：</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>目标</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>设备可用率</td>
+<td>&gt; 95%</td>
+<td>排除人工下线后，可调度设备 / 总设备</td>
+</tr>
+<tr>
+<td>任务基础设施失败率</td>
+<td>&lt; 2%</td>
+<td>与业务失败严格区分</td>
+</tr>
+<tr>
+<td>平均恢复时间</td>
+<td>&lt; 60s</td>
+<td>从 offline 到重新可用</td>
+</tr>
+<tr>
+<td>安装成功率</td>
+<td>&gt; 99%</td>
+<td>低于此值先查线材/Hub/存储</td>
+</tr>
+<tr>
+<td>单任务耗时 P90</td>
+<td>按业务定</td>
+<td>突然劣化通常意味着设备老化或版本回归</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="5-7-企业级踩坑清单">5.7 企业级踩坑清单</h3>
+<p>按"踩到就半夜加班"的程度排序：</p>
+<ol>
+<li><strong>5037 被占用</strong>：各种手机助手（应用宝、360、Kies、Mobizen 等）会偷偷起自己的 adb 或占用端口。用 <code>netstat -ano | findstr :5037</code> 定位 PID，再 <code>taskkill /PID &lt;pid&gt; /F</code> 结束进程，最后排查是哪个软件常驻。</li>
+<li><strong>adb 版本不一致</strong>：CI 镜像、本地、IDE 插件各自带一份 adb。服务器上一定要 <code>which -a adb</code> 查清有几份，并锁版本。</li>
+<li><strong>Windows 多用户会话</strong>：adb server 是<strong>机器级</strong>的。如果 A 用户会话启动了 server，B 用户会连到"别人的" server，看到别人的设备表——共享 Runner 的经典事故。</li>
+<li><strong>USB Hub 供电不足</strong>：便宜 Hub 带 8 台设备，装上第三台就开始随机掉线。<strong>必须用带独立电源的有源 Hub</strong>。</li>
+<li><strong>线材问题</strong>：劣质线只能充电不能传数据，或大数据传输时 CRC 错误导致 <code>failed to finalize session</code>。农场要统一采购、统一标记、定期更换。</li>
+<li><strong>设备自动休眠/锁屏</strong>：<code>svc power stayon true</code> + 关闭自动锁屏 + 关闭省电模式，否则任务跑一半屏幕黑掉。</li>
+<li><strong>Linux 自动挂起</strong>：见 2.1，不改内核参数，设备几十分钟后必掉。</li>
+<li><strong>权限弹窗打断自动化</strong>：<code>install -g</code> + 预置权限 + 首次启动跳过引导（<code>--ez skip_intro true</code> 之类的启动参数）。</li>
+<li><strong><code>adb shell</code> 换行导致断言失败</strong>：见 4.1，永远 <code>tr -d '\r'</code>。</li>
+<li><strong>临时文件不清理</strong>：<code>/sdcard</code> 被截图/录屏/日志塞满，然后开始大面积安装失败。任务结束时清理。</li>
+<li><strong>server 长期运行的状态泄漏</strong>：跑了几天后 <code>adb devices</code> 卡住。低峰期定时 <code>kill-server</code> 是廉价有效的运维手段。</li>
+<li><strong><code>--privileged</code> 容器的安全债</strong>：USB 直通带来了容器逃逸面，安全团队一定会找上来。尽早切到"复用宿主 server"模型。</li>
+</ol>
+<hr>
+<h2 id="6-面试篇分层题库-参考答案">6. 面试篇：分层题库 + 参考答案</h2>
+<h3 id="6-1-初级1-3-年">6.1 初级（1-3 年）<span class="badge lv1">初级 · 1-3 年</span></h3>
+<details class="qa"><summary><span class="qbadge">Q1</span><span class="qtext">ADB 是什么？由哪几部分组成？</span></summary><div class="answer"><p>Android Debug Bridge，包含 <strong>adb client</strong>（开发机上的命令行进程，每条命令一个）、<strong>adb server</strong>（开发机后台常驻，监听 5037，全局唯一）、<strong>adbd</strong>（设备上的守护进程）。client 与 server 走本地 socket 通信，server 与 adbd 走 USB 或 TCP。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q2</span><span class="qtext"><code>adb devices</code> 显示 <code>unauthorized</code> 怎么办？</span></summary><div class="answer"><p>设备未信任开发机公钥。检查手机是否弹出授权弹窗并勾选"一律允许"；确认开发者选项里的 USB 调试已开；可删除 <code>~/.android/adbkey</code> 与 <code>adbkey.pub</code> 让 ADB 重新生成密钥后重新授权；确认 <code>ADB_VENDOR_KEYS</code> 配置；企业 CI 需固化 adbkey。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q3</span><span class="qtext">怎么安装一个 APK？覆盖安装、允许降级、授予权限分别用什么参数？</span></summary><div class="answer"><p><code>adb install app.apk</code>；<code>-r</code> 覆盖安装；<code>-d</code> 允许降级；<code>-g</code> 安装时授予全部运行时权限；<code>-t</code> 允许 test-only 包。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q4</span><span class="qtext">怎么只看某个 TAG 的日志？怎么清空日志？</span></summary><div class="answer"><p><code>adb logcat -s MyTag</code> 或 <code>adb logcat MyTag:D *:S</code>；清空用 <code>adb logcat -c</code>；只看崩溃 <code>adb logcat -b crash -d</code>。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q5</span><span class="qtext">怎么杀掉一个应用的进程？</span></summary><div class="answer"><p>优先 <code>adb shell am force-stop &lt;pkg&gt;</code>（走 AMS，最干净）。想温和一些用 <code>am kill &lt;pkg&gt;</code>。直接 <code>adb shell kill -9 &lt;pid&gt;</code> 也行，但绕过 AMS，可能触发异常重启逻辑。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q6</span><span class="qtext"><code>adb shell</code> 和直接手机上的终端有什么区别？</span></summary><div class="answer"><p><code>adb shell</code> 以 <code>shell</code> 用户身份运行，权限受 SELinux 与 UID 限制；不是 root。分配 PTY，所以有行尾转换等副作用。是否能 <code>su</code> 取决于设备 build 类型（user 版通常不行）。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q7</span><span class="qtext">怎么把文件从电脑推到手机？反过来呢？</span></summary><div class="answer"><p><code>adb push local /sdcard/x</code>；<code>adb pull /sdcard/x .</code>。目录都支持递归。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q8</span><span class="qtext">什么是 <code>-s</code> 参数？为什么需要它？</span></summary><div class="answer"><p>指定目标设备序列号。默认在只有一台设备时自动选中，多台时所有命令报 <code>more than one device/emulator</code>，所以自动化脚本必须显式指定。</p></div></details>
+<hr>
+<h3 id="6-2-中级3-5-年">6.2 中级（3-5 年）<span class="badge lv2">中级 · 3-5 年</span></h3>
+<details class="qa"><summary><span class="qbadge">Q9</span><span class="qtext"><code>adb forward</code> 和 <code>adb reverse</code> 的区别？各举一个真实用途。</span></summary><div class="answer"><p><code>forward</code> 是主机端口映射到设备端口（主机 → 设备），用于通过主机访问设备上的服务；<code>reverse</code> 是设备端口映射到主机端口（设备 → 主机），用于让设备上的 App 访问主机上的服务。
+forward 用例：<code>adb forward tcp:6100 localabstract:scrcpy</code> 让 scrcpy 通过 ADB 拿到设备画面。
+reverse 用例：<code>adb reverse tcp:8081 tcp:8081</code> 让真机访问开发机的 Metro bundler；或 <code>adb reverse tcp:8888 tcp:8888</code> 让真机流量打到主机上的抓包代理。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q10</span><span class="qtext"><code>adb shell</code> 和 <code>adb exec-out</code> 有什么区别？什么时候必须用后者？</span></summary><div class="answer"><p><code>shell</code> 分配 PTY，会把 <code>\n</code> 翻译成 <code>\r\n</code> 并可能破坏二进制流；<code>exec-out</code> 不分配 PTY，输出二进制安全、无行尾改写。取截图/数据库/任何二进制文件时必须用 <code>exec-out</code>。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q11</span><span class="qtext">无线调试的原理？Android 11 的配对机制解决了什么问题？</span></summary><div class="answer"><p>原理：让设备上的 adbd 额外监听 TCP 端口（默认 5555），transport 从 USB 换成 TCP，上层协议完全不变。
+Android 11 之前，<code>adb connect</code> 到 5555 只需设备侧弹窗授权，而 TCP 模式下部分设备不弹窗，等于链路无鉴权。Android 11 引入 <strong>TLS + 8 位配对码的显式配对流程</strong>（<code>adb pair</code>），先建立可信密钥再连接，避免同网段任意主机接入。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q12</span><span class="qtext"><code>adb wait-for-device</code> 之后就能装应用了吗？</span></summary><div class="answer"><p>不能。它只等设备被报告为 device 状态，不代表系统启动完成。要等 <code>sys.boot_completed=1</code>，还要等 PackageManager 可用（<code>pm path android</code> 能返回），否则会出现"设备已就绪但 install 失败"的偶发问题。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q13</span><span class="qtext">怎么在不 root 的情况下拿到 debuggable 应用的私有数据库？</span></summary><div class="answer"><p><code>adb exec-out run-as &lt;pkg&gt; cat databases/app.db &gt; app.db</code>。条件是该应用 <code>android:debuggable="true"</code>（debug 构建），且 <code>run-as</code> 在 user build 上对该应用可用。非 debuggable 应用则需要 root/userdebug 设备，或应用自身提供导出入口。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q14</span><span class="qtext">怎么测应用冷启动时间？怎么保证数据可信？</span></summary><div class="answer"><p><code>adb shell am force-stop &lt;pkg&gt;</code> 然后 <code>adb shell am start -W -n &lt;pkg&gt;/&lt;activity&gt;</code>，读 <code>TotalTime</code>（应用自身启动）与 <code>WaitTime</code>（AMS 视角总耗时）。
+可信性靠三点：固定编译状态（<code>cmd package compile -m speed -f</code>，避免 speed/speed-profile/verify 之间 30%+ 差异）、固定环境（分辨率/密度/动画/亮度/电量/温度、清后台）、多次采样取中位数与 P90。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q15</span><span class="qtext"><code>offline</code> 状态的原因有哪些？怎么排查？</span></summary><div class="answer"><p>常见原因：USB 自动挂起、线材/供电问题、设备休眠、adb server 状态卡死、client/server 版本不一致、多个 adb server 争抢同一设备。
+排查顺序：<code>adb kill-server &amp;&amp; adb start-server</code> → <code>adb reconnect offline</code> → 换线换口 → 检查 <code>which -a adb</code> 版本是否唯一 → Linux 检查 udev 与 autosuspend → 最后考虑 <code>adb reboot</code>。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q16</span><span class="qtext">ANR 和 Native 崩溃的日志分别在哪里？</span></summary><div class="answer"><p>ANR：<code>/data/anr/</code> 下的 traces（需权限），或 <code>dumpsys dropbox</code> 的 <code>data_app_anr</code> 条目；最稳妥是 <code>adb bugreport</code> 里取 <code>FS/data/anr/</code>。Native 崩溃：<code>/data/tombstones/tombstone_*</code>（需 root/userdebug），logcat 的 <code>DEBUG</code>/<code>crash</code> 缓冲区也有摘要。Android 11+ 还可用 <code>dumpsys activity exit-info &lt;pkg&gt;</code> 查历史退出原因。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q17</span><span class="qtext">怎么抓全量现场交给开发排查？</span></summary><div class="answer"><p><code>adb bugreport &lt;dir&gt;</code>，产出 zip，包含完整 dumpsys、全部 logcat、ANR、tombstone、属性、文件系统快照。注意 Android 7+ 才支持目录参数，且 proto 格式比文本更完整（文本 dumpsys 常被截断）。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q18</span><span class="qtext">一台机器上跑多台设备的自动化，有哪些隔离点？</span></summary><div class="answer"><p>① 用 <code>-s &lt;serial&gt;</code> 指定设备；② 端口转发/reverse 用任务独立端口（端口池）；③ 设备级文件锁保证同一设备不被并发占用；④ 任务前后清理设备状态（force-stop、wm reset、reverse remove-all）；⑤ 不要为了隔离而给每个任务起独立 adb server——会争抢 USB 设备句柄。</p></div></details>
+<hr>
+<h3 id="6-3-高级-架构设计">6.3 高级 / 架构设计<span class="badge lv3">高级 · 架构 / 资深</span></h3>
+<details class="qa"><summary><span class="qbadge">Q19</span><span class="qtext">什么叫"单 adb server + <code>-s</code> 隔离"？为什么不推荐每个任务一个 adb server？</span></summary><div class="answer"><p>一个 adb server 可以管理所有设备，通过 <code>-s</code> 精确路由，资源开销最小、设备枚举唯一，不会重复打开 USB 句柄。
+多个 adb server（不同 <code>ANDROID_ADB_SERVER_PORT</code>）会各自扫描 USB 并争抢同一物理设备，导致 <code>device busy</code>/<code>offline</code> 潮；而且 <code>kill-server</code> 会互相影响。多 server 只适合"故障域隔离"这种极少数场景。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q20</span><span class="qtext">设计一个千台规模的 Android 设备农场，你会怎么分层？</span></summary><div class="answer"><p>参考答法（分五层，讲清职责与失败域）：
+1. <strong>接入层</strong>：USB Hub（有源、可断电重启）+ 主机（每台 16-32 台设备），Linux + udev + 关闭 autosuspend。
+2. <strong>ADB 网关层</strong>：单机单 server；封装 ADB 操作为 RPC（安装/启动/日志/截图），屏蔽 shell 细节；内置重试与超时。
+3. <strong>健康与自愈层</strong>：watchdog 做 L1-L5 分层恢复（reconnect → 重启 server → USB 断电 → reboot → 人工）；健康指标（电量/温度/存储/在线率）驱动出池入池。
+4. <strong>调度层</strong>：设备注册与标签（机型/版本/ABI）、租约 + 心跳 + 超时释放、任务队列、优先级与抢占；任务前后自动 reset。
+5. <strong>可观测与产物层</strong>：设备在线率/基础设施失败率 SLO、失败任务自动收 bugreport/logcat/截图、产物归档与检索（按 task id 关联）。
+附加：多租户隔离（配额 + 网络隔离）、成本核算（设备占用时长）、灰度（先小池验证再全量）。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q21</span><span class="qtext">设备"看起来在线但任务总是失败"，你怎么定位？</span></summary><div class="answer"><p>分三路收敛：
+① <strong>链路真实性</strong>：不要只信 <code>adb devices</code>，要实际执行一次命令（<code>adb -s X shell echo ok</code>）——<code>device</code> 状态不等于链路可用。
+② <strong>设备侧</strong>：存储是否满（<code>df /data</code>）、电量/温度是否异常、是否被前一个任务污染（残留 reverse、改过的 wm size、未清的数据）。
+③ <strong>宿主机侧</strong>：<code>/proc/loadavg</code>、USB 错误日志（<code>dmesg | grep -i usb</code>）、是否有别的软件在抢 5037、adb 版本是否被升级。
+工程化解法：把"任务前自检"做成流水线第一步（自检不过直接标记设备不健康并换机），而不是让任务失败后再排查。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q22</span><span class="qtext">CI 里 Android 测试失败的分类为什么重要？你会怎么设计？</span></summary><div class="answer"><p>因为"业务断言失败"和"基础设施失败"的<strong>责任人和处理动作完全不同</strong>：前者给开发，后者给平台/运维。混在一起会导致"测试不稳定"的口碑崩塌，团队开始忽略红灯。
+设计：定义分层退出码（0 通过 / 1 用例失败 / 2 基础设施失败 / 3 资源不足），CI 里对 2/3 自动重试一次并换设备，仍未通过则告警平台方；同时把设备信息、bugreport、logcat 作为产物归档，让失败可归因。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q23</span><span class="qtext">你怎么保证 ADB 操作在自动化里"幂等 + 可重试"？</span></summary><div class="answer"><ul>
+<li>安装：<code>install -r -g -t</code>，配 <code>pm uninstall</code> 兜底签名冲突。</li>
+<li>启动：<code>am start -S -W</code>，<code>-S</code> 保证"杀死再启"的确定起点。</li>
+<li>状态清理：<code>pm clear</code>、<code>wm size reset</code>、<code>settings put</code> 恢复默认、<code>reverse --remove-all</code>。</li>
+<li>等待：用"轮询条件"而不是 <code>sleep N</code>（<code>boot_completed</code>、<code>pm path</code>、目标窗口出现）。</li>
+<li>超时：所有 adb 调用都包 <code>timeout</code>，避免挂死占住设备。</li>
+<li>重试：只对<strong>幂等且明确是基础设施错误</strong>的操作重试（install、connect），不对断言重试。</li>
+</ul></div></details>
+<details class="qa"><summary><span class="qbadge">Q24</span><span class="qtext"><code>pm</code>、<code>cmd package</code>、<code>dumpsys</code> 三者关系？</span></summary><div class="answer"><p><code>pm</code>/<code>am</code>/<code>wm</code> 等是设备上的 shell 脚本，内部多数转发到 <code>cmd &lt;service&gt; &lt;args&gt;</code>（Android 7+ 引入 <code>cmd</code>）。<code>dumpsys</code> 走的是 <code>IDumpstate</code>/各系统服务的 <code>dump()</code> 接口，输出的是"服务内部状态"。做工具时优先用 <code>cmd</code>（参数更稳定、有 <code>help</code> 输出、便于解析），需要深层状态时才上 <code>dumpsys</code>。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q25</span><span class="qtext">ADB 的安全边界在哪？企业里怎么加固？</span></summary><div class="answer"><p>边界：<code>shell</code> 用户能做的事它都能做（am/pm/dumpsys/读写共享存储），在 userdebug 设备上 <code>adb root</code> 直接是 root。加固：生产设备用 Device Owner 设 <code>DISALLOW_DEBUGGING_FEATURES</code>；关闭 tcpip 长期监听（<code>adb usb</code>）；CI 用专用测试机 + 受控 adbkey；终端侧禁止未知 USB 设备（设备管控软件）；日志脱敏；《数据最小化》原则——不要把真实用户设备接到测试农场。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q26</span><span class="qtext">无线调试适合大规模农场吗？</span></summary><div class="answer"><p>不适合作为主力。原因：WiFi 共享介质导致抖动与掉线；安装大 APK 吞吐远低于 USB（2-5 倍慢）；长期测试需独立供电；mDNS/子网隔离在数据中心里常被禁。它的价值在"免线灵活接入、远程/跨地域、演示"。规模化仍以有源 USB Hub + 独立供电为主。</p></div></details>
+<details class="qa"><summary><span class="qbadge">Q27</span><span class="qtext">为什么 <code>adb kill-server</code> 能解决很多问题？什么时候不该用？</span></summary><div class="answer"><p>因为它重建了设备枚举与连接状态机，清掉了卡死的 transport 和过期的 socket。不该用的时候：有其他并发任务正在跑（会波及其他任务，这也是为什么生产环境应给"server 重启"加全机级别锁，并在低峰期执行）。</p></div></details>
+<hr>
+<h3 id="6-4-场景设计题重点">6.4 场景设计题（重点）<span class="badge lv4">场景题 · 重点</span></h3>
+<details class="qa scene"><summary><span class="qbadge scene-badge">场景</span><span class="qtext">场景一：App 偶发闪退，QA 说"复现不了"，你只有一台设备，怎么把证据拿回来？</span></summary><div class="answer"><p>参考答法（体现工程化思维，而不是"我多试几次"）：</p>
+<ol>
+<li><strong>先扩缓冲区</strong>：<code>adb logcat -G 16M</code>，否则崩溃日志会被冲掉。</li>
+<li><strong>持续落盘 + 分片</strong>：后台跑 <code>adb logcat -b all -v threadtime -f /sdcard/lc_%Y%m%d_%H%M%S.log</code>（或主机侧 <code>-f</code> 到本地），避免只抓"事后"。</li>
+<li><strong>开启 tombstone/ANR 收集</strong>：<code>adb shell setprop persist.tombstoned.enabled 1</code>（视 ROM），并周期性 <code>adb shell ls /data/anr</code>。</li>
+<li><strong>用 bugreport 兜底</strong>：一旦观察到异常，立即 <code>adb bugreport</code>，拿到完整现场（含 proto 全字段）。</li>
+<li><strong>让脚本 7×24 跑压力路径</strong>：Monkey（<code>--pct-syskeys 0 --ignore-crashes --monitor-native-crashes</code>）+ 关键业务链路脚本，把"偶发"变成"必然"。</li>
+<li><strong>归因分层</strong>：拿到崩溃后区分 Java / Native / 系统杀进程（<code>exit-info</code>、<code>dumpsys dropbox</code> 的 <code>data_app_crash</code>、<code>system_app_anr</code>、LMK 日志 <code>lowmemorykiller</code>）。</li>
+<li><strong>产出物关联</strong>：日志 + 崩溃时间点 + 操作路径 + 设备/版本信息一起提 issue，而不是丢一段 logcat。</li>
+</ol></div></details>
+<details class="qa scene"><summary><span class="qbadge scene-badge">场景</span><span class="qtext">场景二：给公司搭一个"研发自助借真机"平台，你会怎么做？</span></summary><div class="answer"><p>参考答法：</p>
+<ol>
+<li><strong>需求拆解</strong>：借还（租约）、远程操作（投屏+触控）、环境还原（每次借用后 reset）、权限（谁能用哪些机型）、审计。</li>
+<li><strong>最小可用版本</strong>：DeviceFarmer/stf 或 scrcpy over adb 做远程投屏；用文件锁/DB 做租约；task 结束自动 <code>pm clear</code> + <code>wm reset</code> + <code>reverse --remove-all</code>。</li>
+<li><strong>不要自研的部分</strong>：投屏/编码（用 scrcpy 或 stf）、设备健康（用现成 watchdog 模式）。</li>
+<li><strong>必须自研的部分</strong>：与公司账号体系打通的权限模型、审计日志、与 CI 设备池的资源共享策略（研发白天用、CI 夜间用，或按配额划分）。</li>
+<li><strong>风险</strong>：研发用真机跑业务，容易把测试机当生产机，需要网络隔离 + 敏感数据管控。</li>
+</ol></div></details>
+<details class="qa scene"><summary><span class="qbadge scene-badge">场景</span><span class="qtext">场景三：流水线里 Android 测试"红灯疲劳"，怎么救？</span></summary><div class="answer"><p>参考答法：</p>
+<ol>
+<li><strong>先量化</strong>：把失败分为 用例失败 / 基础设施失败 / 超时 三类，算出各自比例（通常会发现基础设施类占 30-60%）。</li>
+<li><strong>对症下药</strong>：
+   - 基础设施类：加等待三连、<code>-g</code> 安装、超时与重试、换线换 Hub、watchdog 自愈。
+   - 超时类：拆分长用例、给每个 adb 调用加 timeout、设备换更高性能机型。
+   - 真实失败类：交给开发，并把 bugreport 自动附上。</li>
+<li><strong>机制建设</strong>：分层退出码、基础设施失败自动换机重试一次、失败自动归档现场、稳定性看板（周维度趋势）。</li>
+<li><strong>文化</strong>：为"基础设施失败率"设 SLO（如 &lt;2%），平台方对该指标负责，开发才不会觉得红灯是噪音。</li>
+</ol></div></details>
+<hr>
+<h3 id="6-5-面试官视角什么样的回答加分">6.5 面试官视角：什么样的回答加分<span class="badge lv5">面试官视角 · 加分项</span></h3>
+<div class="verdict bad"><h4>✕ 会减分的回答</h4><ul><li>只会背命令，问"为什么"就答不上来。</li>
+<li>把 <code>forward</code> 和 <code>reverse</code> 讲反，或只知道 <code>forward</code>。</li>
+<li>认为 <code>adb devices</code> 显示 <code>device</code> 就等于链路可用。</li>
+<li>说"多台设备就用多个 adb server"。</li>
+<li>谈性能测试只说"跑 10 次取平均"，不提编译状态与环境固化。</li>
+<li>遇到"设备掉线"只会说"重启一下"。</li></ul></div>
+<div class="verdict good"><h4>✓ 明显加分的回答</h4><ul><li>能画出 client / server / adbd 三端架构，并解释 5037 与 5555 的角色。</li>
+<li>主动区分 <code>shell</code> 与 <code>exec-out</code> 的二进制安全性，并提到 <code>\r</code> 的坑。</li>
+<li>讲 <code>reverse</code> 时能说出 RN/Metro、Mock Server、抓包三个真实场景。</li>
+<li>谈架构时主动引入"失败域/责任边界/退出码分层"，把技术问题上升为协作问题。</li>
+<li>谈稳定性时给出"L1-L5 分层自愈"这种结构化答案。</li>
+<li>主动提安全与合规（Device Owner、DISALLOW_DEBUGGING_FEATURES、数据最小化）。</li>
+<li>承认边界：知道 ADB 在 user build 上的能力上限，不吹牛。</li></ul></div>
+<hr>
+<h2 id="7-故障排查手册">7. 故障排查手册</h2>
+<h3 id="7-1-设备连接类">7.1 设备连接类</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>排查步骤</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>adb devices</code> 空列表</td>
+<td>① 换线换口 ② Windows 装/换 USB 驱动（Zadig→WinUSB）③ <code>adb kill-server</code> ④ Linux 查 udev + <code>lsusb</code> ⑤ 开发者选项里 USB 调试是否开 ⑥ 是否被手机助手软件占用 5037</td>
+</tr>
+<tr>
+<td><code>unauthorized</code></td>
+<td>手机弹窗点允许 → 删 <code>~/.android/adbkey*</code> 重新授权 → 检查 <code>ADB_VENDOR_KEYS</code></td>
+</tr>
+<tr>
+<td><code>offline</code></td>
+<td><code>adb reconnect offline</code> → <code>kill-server</code> → 检查 autosuspend → 换线 → <code>adb reboot</code></td>
+</tr>
+<tr>
+<td><code>no permissions</code></td>
+<td>Linux udev 规则 + 用户组 + <code>adb kill-server</code> 后重插</td>
+</tr>
+<tr>
+<td>有设备但命令都报 <code>more than one device</code></td>
+<td>加 <code>-s &lt;serial&gt;</code>；或临时 <code>-d</code>/<code>-e</code></td>
+</tr>
+<tr>
+<td>emulator 连不上</td>
+<td>查 <code>emulator-5554</code> 是否被占用；冷启动 emulator；查 Hyper-V/WHPX 冲突</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="7-2-server-与服务类">7.2 Server 与服务类</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>排查步骤</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>adb server version doesn't match</code></td>
+<td><code>which -a adb</code> 找全部副本，统一到同一版本（IDE 插件常自带一份）</td>
+</tr>
+<tr>
+<td><code>cannot connect to daemon at tcp:5037</code></td>
+<td><code>netstat -ano \| findstr :5037</code> 找占用进程；防火墙；多用户会话冲突</td>
+</tr>
+<tr>
+<td>命令随机卡住不返回</td>
+<td>server 状态泄漏 → 低峰期 <code>kill-server</code>；给所有 adb 调用加 <code>timeout</code></td>
+</tr>
+<tr>
+<td>多台设备同时掉线</td>
+<td>USB 控制器/供电问题；<code>dmesg \| grep -i usb</code>；降低单机设备密度</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="7-3-安装与运行类">7.3 安装与运行类</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>排查步骤</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INSTALL_FAILED_UPDATE_INCOMPATIBLE</code></td>
+<td>签名不一致 → <code>adb uninstall</code> 后重装</td>
+</tr>
+<tr>
+<td><code>INSTALL_FAILED_INSUFFICIENT_STORAGE</code></td>
+<td><code>adb shell df -h /data</code>，清理 <code>/sdcard</code> 与临时文件</td>
+</tr>
+<tr>
+<td><code>failed to finalize session</code></td>
+<td>线材/USB Hub/存储满；降低传输并发</td>
+</tr>
+<tr>
+<td><code>INSTALL_FAILED_USER_RESTRICTED</code></td>
+<td>厂商限制 → 开发者选项允许 USB 安装；MIUI 需登录账号等</td>
+</tr>
+<tr>
+<td>装完就闪退</td>
+<td><code>adb logcat -b crash -d</code>；检查 ABI 是否匹配（<code>--abi</code>）</td>
+</tr>
+<tr>
+<td>应用启动即黑屏/白屏</td>
+<td><code>dumpsys window \| grep mCurrentFocus</code> 看焦点是否在自己应用；常见于引导页/权限弹窗</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="7-4-日志与证据类">7.4 日志与证据类</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>排查步骤</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>抓不到崩溃日志</td>
+<td><code>logcat -G 16M</code> 扩 buffer；加 <code>-b crash</code>/<code>-b all</code>；改用 <code>bugreport</code></td>
+</tr>
+<tr>
+<td>ANR traces 读不到</td>
+<td>需 root/userdebug；改用 <code>bugreport</code> 的 <code>FS/data/anr/</code>，或 <code>dumpsys dropbox --print</code></td>
+</tr>
+<tr>
+<td>日志里时间对不上</td>
+<td>设备时区/时钟偏移 → <code>adb shell date</code>，比对主机时间；用 <code>-v threadtime</code> 带完整时间戳</td>
+</tr>
+<tr>
+<td>截图是坏的/打不开</td>
+<td>PowerShell 重定向陷阱（见 3.8），改用 <code>cmd /c</code>、<code>Set-Content -AsByteStream</code> 或先落盘再 pull</td>
+</tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="8-附录命令速查">8. 附录：命令速查</h2>
+<h3 id="8-1-设备与连接">8.1 设备与连接</h3>
+<pre><code class="language-bash">adb devices -l                       # 列设备（含型号/transport_id）
+adb -s &lt;serial&gt; &lt;cmd&gt;                # 指定设备（自动化必用）
+adb -d / -e / -t &lt;id&gt;                # USB / 模拟器 / transport_id
+adb kill-server / start-server       # 重启 server
+adb get-state / get-serialno
+adb wait-for-device                  # 等设备出现
+adb reconnect [offline|device]
+adb reboot [bootloader|recovery|sideload]
+adb root / unroot / remount
+adb usb                              # 关掉 TCP 模式，回到 USB
+adb tcpip 5555                       # 设备监听 5555
+adb connect &lt;ip&gt;:5555 / disconnect
+adb pair &lt;ip&gt;:&lt;port&gt;                 # Android 11+ 配对
+adb mdns check / services
+</code></pre>
+<h3 id="8-2-应用">8.2 应用</h3>
+<pre><code class="language-bash">adb install [-r|-d|-g|-t] app.apk
+adb install-multiple base.apk split_*.apk
+adb uninstall [-k] com.pkg
+adb shell pm list packages [-3|-s|-d|-u] [-f]
+adb shell pm path com.pkg
+adb shell pm clear com.pkg
+adb shell pm grant/revoke com.pkg &lt;permission&gt;
+adb shell pm disable-user --user 0 com.pkg
+adb shell appops get/set com.pkg &lt;op&gt; &lt;mode&gt;
+adb shell cmd package compile -m speed -f com.pkg
+adb shell dumpsys package com.pkg
+</code></pre>
+<h3 id="8-3-组件与交互">8.3 组件与交互</h3>
+<pre><code class="language-bash">adb shell am start [-W|-S] -n com.pkg/.Act
+adb shell am force-stop com.pkg
+adb shell am broadcast -a &lt;action&gt; [--es k v] [--ei k 1]
+adb shell am instrument -w -r -e class &lt;cls&gt; &lt;pkg/runner&gt;
+adb shell input text &quot;hi%sworld&quot;
+adb shell input tap/swipe/keyevent ...
+adb shell uiautomator dump /sdcard/ui.xml
+adb shell dumpsys window | grep -E &quot;mCurrentFocus|mFocusedApp&quot;
+</code></pre>
+<h3 id="8-4-文件与屏幕">8.4 文件与屏幕</h3>
+<pre><code class="language-bash">adb push &lt;local&gt; &lt;remote&gt;            # 电脑 → 设备
+adb pull &lt;remote&gt; &lt;local&gt;            # 设备 → 电脑
+adb exec-out cat /sdcard/x &gt; x       # 二进制安全
+adb exec-out run-as com.pkg cat databases/app.db &gt; app.db
+adb shell screencap -p /sdcard/s.png
+adb exec-out screencap -p &gt; s.png    # 注意 PowerShell 陷阱
+adb shell screenrecord /sdcard/a.mp4 --time-limit 180
+adb shell wm size [WxH|reset]
+adb shell wm density [N|reset]
+adb shell df -h
+</code></pre>
+<h3 id="8-5-日志与诊断">8.5 日志与诊断</h3>
+<pre><code class="language-bash">adb logcat -c                        # 清
+adb logcat -d                        # dump 退出
+adb logcat -v threadtime             # 推荐格式
+adb logcat -b main,system,crash -d
+adb logcat -s TAG / TAG:D *:S
+adb logcat --pid=$(adb shell pidof -s com.pkg)
+adb logcat -G 16M                    # 扩 buffer
+adb shell dumpsys meminfo/cpuinfo/gfxinfo/batterystats &lt;pkg&gt;
+adb shell dumpsys activity exit-info &lt;pkg&gt;
+adb shell dumpsys dropbox --print
+adb shell dumpsys deviceidle force-idle / unforce
+adb shell perfetto -o /data/misc/perfetto-traces/t -t 10s sched freq am wm gfx view
+adb bugreport ./out                  # 全量现场（重武器）
+</code></pre>
+<h3 id="8-6-端口与转发">8.6 端口与转发</h3>
+<pre><code class="language-bash">adb forward tcp:6100 localabstract:scrcpy
+adb forward --list / --remove-all
+adb reverse tcp:8081 tcp:8081        # 设备 → 主机
+adb reverse --list / --remove-all
+</code></pre>
+<h3 id="8-7-环境变量">8.7 环境变量</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>变量</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ANDROID_SERIAL</code></td>
+<td>等价于 <code>-s</code>，CI 里最常用</td>
+</tr>
+<tr>
+<td><code>ANDROID_ADB_SERVER_PORT</code></td>
+<td>改默认 5037（隔离/多实例）</td>
+</tr>
+<tr>
+<td><code>ADB_VENDOR_KEYS</code></td>
+<td>附加厂商公钥</td>
+</tr>
+<tr>
+<td><code>ADB_LOCAL_TRANSPORT_MAX_PORT</code></td>
+<td>调整设备端 TCP 端口扫描范围</td>
+</tr>
+<tr>
+<td><code>ADB_TRACE</code></td>
+<td>打印 adb 自身调试日志（如 <code>all</code>、<code>sockets</code>），排查 adb 问题终极手段</td>
+</tr>
+</tbody>
+</table></div>
+<hr>
+<h2 id="结语">结语</h2>
+<p>ADB 的知识曲线很有意思：</p>
+<ul>
+<li><strong>第一层</strong>（会用）：记住命令，能装能看日志。</li>
+<li><strong>第二层</strong>（懂原理）：知道 client/server/adbd、5037/5555、PTY 与 <code>exec-out</code>、<code>forward</code>/<code>reverse</code>。</li>
+<li><strong>第三层</strong>（能治理）：把 ADB 当作需要被调度、隔离、自愈、可观测的资源，用分层退出码和 SLO 把它变成可信赖的基础设施。</li>
+</ul>
+<p>绝大多数人停在第一层。面试和职场里真正拉开差距的，是从第二层往第三层走的那段路——而这段路，恰恰就是本文第 5 章和第 6.3、6.4 节的内容。</p>
+
+  <footer class="doc-foot">
+    <span>共 27 道面试题 · 3 道场景设计题 · 单文件离线可用</span>
+    <span>按 <kbd>Ctrl</kbd>+<kbd>K</kbd> 搜索 · 按 <kbd>Esc</kbd> 关闭</span>
+  </footer>
+
+</main>
+</div>
+
+<button class="totop" id="totop" aria-label="回到顶部">↑</button>
+
+<div class="overlay" id="overlay">
+  <div class="palette" role="dialog" aria-modal="true">
+    <div class="pin">
+      <span>🔍</span>
+      <input id="pq" type="text" placeholder="输入命令片段或章节名，例如 reverse / bugreport / 设备农场" autocomplete="off" spellcheck="false">
+      <span class="esc">Esc</span>
+    </div>
+    <div class="presults" id="presults"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  /* 标题上挂了锚点链接, 取纯文本时必须先摘掉, 否则搜索结果会多出一个 # */
+  function hTitle(h) {
+    var c = h.cloneNode(true);
+    $$(".anchor", c).forEach(function (a) { if (a.parentNode) a.parentNode.removeChild(a); });
+    return c.textContent.replace(/\s+/g, " ").trim();
+  }
+
+  /* ---------------- 主题 ---------------- */
+  var root = document.documentElement;
+  var saved = null;
+  try { saved = localStorage.getItem("adb-blog-theme"); } catch (e) {}
+  var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  setTheme(saved || (prefersDark ? "dark" : "light"));
+
+  function setTheme(t) {
+    root.setAttribute("data-theme", t);
+    var btn = $("#themeBtn");
+    if (btn) btn.textContent = t === "dark" ? "☀️" : "🌙";
+    try { localStorage.setItem("adb-blog-theme", t); } catch (e) {}
+  }
+  $("#themeBtn").addEventListener("click", function () {
+    setTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  });
+
+  /* ---------------- 字号 ---------------- */
+  var base = parseInt(localStorage.getItem("adb-blog-fs") || "16", 10);
+  applyFs();
+  function applyFs() {
+    base = Math.min(21, Math.max(13, base));
+    root.style.setProperty("--base", base + "px");
+    try { localStorage.setItem("adb-blog-fs", String(base)); } catch (e) {}
+  }
+  $("#fsUp").addEventListener("click", function () { base += 1; applyFs(); });
+  $("#fsDown").addEventListener("click", function () { base -= 1; applyFs(); });
+
+  /* ---------------- 代码高亮 + 复制 ---------------- */
+  var CMDRE = /^[A-Za-z_][A-Za-z0-9_.\-]*$/;
+
+  function escHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function tokenize(src) {
+    var re = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|(\$\{[A-Za-z_]\w*\}|\$[A-Za-z_]\w*|\$[0-9?!#@*])|(\s-{1,2}[A-Za-z][\w-]*)|(\b\d+(?:\.\d+)?\b)/g;
+    var out = [], last = 0, m;
+    while ((m = re.exec(src)) !== null) {
+      if (m.index > last) out.push({ t: "p", v: src.slice(last, m.index) });
+      var type = m[1] ? "m" : m[2] ? "s" : m[3] ? "v" : m[4] ? "f" : "n";
+      out.push({ t: type, v: m[0] });
+      last = m.index + m[0].length;
+      if (m[0].length === 0) re.lastIndex++;
+    }
+    if (last < src.length) out.push({ t: "p", v: src.slice(last) });
+    return out;
+  }
+
+  function markCommands(tokens) {
+    var out = [], atStart = true, i, tk, s, buf, ch, mm, j;
+    for (i = 0; i < tokens.length; i++) {
+      tk = tokens[i];
+      if (tk.t !== "p") {
+        out.push(tk);
+        atStart = false;
+        continue;
+      }
+      s = tk.v; buf = ""; j = 0;
+      while (j < s.length) {
+        ch = s.charAt(j);
+        if (atStart) {
+          mm = CMDRE.exec(s.slice(j));
+          if (mm) {
+            if (buf) { out.push({ t: "p", v: buf }); buf = ""; }
+            out.push({ t: "c", v: mm[0] });
+            j += mm[0].length; atStart = false; continue;
+          }
+          if (ch === " " || ch === "\t" || ch === "\n") { buf += ch; j++; continue; }
+          atStart = false;
+        }
+        if (ch === "\n") { atStart = true; buf += ch; j++; continue; }
+        if (ch === "|" || ch === ";" || ch === "&") {
+          while (j < s.length && (s.charAt(j) === "|" || s.charAt(j) === ";" || s.charAt(j) === "&")) {
+            buf += s.charAt(j); j++;
+          }
+          atStart = true; continue;
+        }
+        buf += ch; j++;
+      }
+      if (buf) out.push({ t: "p", v: buf });
+    }
+    return out;
+  }
+
+  function render(code) {
+    var src = code.textContent;
+    var cls = code.className || "";
+    /* text / console 是「原文输出」，不做 shell 语法着色，避免把 List、adb: 之类误判成命令 */
+    if (/language-(text|console)/.test(cls)) return;
+    if (!/language-(bash|sh|shell|zsh|powershell|ps1)/.test(cls)) return;
+    var toks = markCommands(tokenize(src));
+    var buf = "";
+    for (var i = 0; i < toks.length; i++) {
+      var v = escHtml(toks[i].v);
+      buf += toks[i].t === "p" ? v : '<span class="tok-' + toks[i].t + '">' + v + "</span>";
+    }
+    code.innerHTML = buf;
+  }
+
+  $$("pre").forEach(function (pre) {
+    var code = pre.querySelector("code");
+    if (!code) return;
+    render(code);
+    var m = /language-([\w-]+)/.exec(code.className || "");
+    var head = document.createElement("div");
+    head.className = "pre-head";
+    head.innerHTML = '<span class="dots"><i></i><i></i><i></i></span><span class="lang">'
+      + (m ? m[1] : "text") + "</span>";
+    var btn = document.createElement("button");
+    btn.className = "copy";
+    btn.type = "button";
+    btn.textContent = "复制";
+    btn.addEventListener("click", function () {
+      var txt = code.textContent;
+      var done = function () {
+        btn.textContent = "已复制"; btn.classList.add("done");
+        setTimeout(function () { btn.textContent = "复制"; btn.classList.remove("done"); }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done, fallback);
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "复制失败"; }
+        document.body.removeChild(ta);
+      }
+    });
+    head.appendChild(btn);
+    pre.insertBefore(head, code);
+  });
+
+  /* ---------------- 路径卡片定位 ---------------- */
+  $$("[data-h]").forEach(function (el) {
+    var key = el.getAttribute("data-h");
+    var hit = $$("h2,h3").filter(function (h) {
+      return h.textContent.replace(/\s+/g, " ").trim().indexOf(key) === 0;
+    })[0];
+    if (hit) el.setAttribute("href", "#" + hit.id);
+  });
+
+  /* ---------------- 滚动高亮 + 进度 + 回到顶部 ---------------- */
+  var heads = $$(".doc h2, .doc h3");
+  var links = $$(".toc a");
+  var linkMap = {};
+  links.forEach(function (a) { linkMap[a.getAttribute("data-target")] = a; });
+
+  var bar = $("#bar"), totop = $("#totop"), ticking = false;
+
+  function onScroll() {
+    var y = window.scrollY || document.documentElement.scrollTop;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (h > 0 ? Math.min(100, (y / h) * 100) : 0) + "%";
+    totop.classList.toggle("show", y > 600);
+
+    var cur = null;
+    for (var i = 0; i < heads.length; i++) {
+      if (heads[i].getBoundingClientRect().top <= 120) cur = heads[i]; else break;
+    }
+    if (!cur) cur = heads[0];
+    if (cur) {
+      links.forEach(function (a) { a.classList.remove("active"); });
+      var a2 = linkMap[cur.id];
+      if (a2) {
+        a2.classList.add("active");
+        var grp = a2.closest(".toc-group");
+        if (grp) {
+          $$(".toc-group.open").forEach(function (g) { if (g !== grp) g.classList.remove("open"); });
+          grp.classList.add("open");
+          /* 仅当激活项跑出侧栏可视区时才滚动它, 且用 rect 计算(offsetTop 相对的是文档而非滚动容器) */
+          var box = $("#toc");
+          var ar = a2.getBoundingClientRect(), br = box.getBoundingClientRect();
+          if (ar.top < br.top + 12 || ar.bottom > br.bottom - 12) {
+            box.scrollTo({
+              top: box.scrollTop + (ar.top - br.top) - box.clientHeight / 2 + ar.height / 2,
+              behavior: "smooth"
+            });
+          }
+        }
+      }
+    }
+    ticking = false;
+  }
+  window.addEventListener("scroll", function () {
+    if (!ticking) { ticking = true; window.requestAnimationFrame(onScroll); }
+  }, { passive: true });
+  onScroll();
+
+  totop.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
+
+  // 默认展开当前章节
+  var firstActive = $(".toc a.active");
+  if (firstActive && firstActive.closest(".toc-group")) firstActive.closest(".toc-group").classList.add("open");
+
+  /* ---------------- 面试题展开 / 收起 ---------------- */
+  $$("#expandAll").forEach(function (b) {
+    b.addEventListener("click", function () { $$("details.qa").forEach(function (d) { d.open = true; }); });
+  });
+  $$("#collapseAll").forEach(function (b) {
+    b.addEventListener("click", function () { $$("details.qa").forEach(function (d) { d.open = false; }); });
+  });
+  /* 不做「打开一个自动关掉其他」的手风琴: 那会让「展开全部」立刻被自己撤销,
+     也会关掉读者主动打开的题, 阅读体验反而更差。折叠态交给用户。 */
+
+  /* ---------------- 标题锚点(悬停出现, 点击复制深链) ---------------- */
+  $$(".doc h2, .doc h3").forEach(function (h) {
+    var a = document.createElement("a");
+    a.className = "anchor";
+    a.href = "#" + h.id;
+    a.textContent = "#";
+    a.title = "复制本段链接";
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      var url = location.href.split("#")[0] + "#" + h.id;
+      history.replaceState(null, "", "#" + h.id);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () {
+          a.classList.add("done");
+          setTimeout(function () { a.classList.remove("done"); }, 1200);
+        }, function () {});
+      }
+      h.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    h.appendChild(a);
+  });
+
+  /* ---------------- 搜索面板 ---------------- */
+  var index = [];
+  $$(".doc pre").forEach(function (pre) {
+    var code = pre.querySelector("code");
+    if (!code) return;
+    var secTitle = "", secId = "";
+    var node = pre;
+    while (node && node !== document.body) {
+      node = node.previousElementSibling;
+      while (node) {
+        if (/^H[23]$/.test(node.tagName)) { secTitle = hTitle(node); secId = node.id; break; }
+        node = node.previousElementSibling;
+      }
+      if (secTitle) break;
+      node = pre.parentElement;
+      break;
+    }
+    if (!secTitle) {
+      var anc = pre.closest("details, section, div");
+      while (anc && !secTitle) {
+        var p = anc.previousElementSibling;
+        while (p) {
+          if (/^H[23]$/.test(p.tagName)) { secTitle = hTitle(p); secId = p.id; break; }
+          p = p.previousElementSibling;
+        }
+        anc = anc.parentElement;
+      }
+    }
+    code.textContent.split("\n").forEach(function (line) {
+      var t = line.trim();
+      if (t.length < 3) return;
+      index.push({ line: t, title: secTitle || "正文", id: secId || "", el: pre, hay: t.toLowerCase() });
+    });
+  });
+
+  var headings = $$(".doc h2, .doc h3").map(function (h) {
+    return { title: hTitle(h), id: h.id, level: h.tagName === "H2" ? 2 : 3 };
+  });
+
+  var overlay = $("#overlay"), input = $("#pq"), results = $("#presults");
+  var sel = -1;
+
+  function openPalette() {
+    overlay.classList.add("show");
+    input.value = "";
+    renderResults("");
+    setTimeout(function () { input.focus(); }, 20);
+  }
+  function closePalette() {
+    overlay.classList.remove("show");
+    sel = -1;
+  }
+  $("#openSearch").addEventListener("click", openPalette);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) closePalette(); });
+
+  var isMac = /Mac|iPhone|iPad/.test(navigator.platform || "");
+  $("#kbdHint").textContent = isMac ? "⌘ K" : "Ctrl K";
+
+  document.addEventListener("keydown", function (e) {
+    var k = e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && k === "k") { e.preventDefault(); openPalette(); return; }
+    if (e.key === "/" && !/input|textarea/i.test((e.target.tagName || ""))) { e.preventDefault(); openPalette(); return; }
+    if (!overlay.classList.contains("show")) return;
+    if (e.key === "Escape") { closePalette(); }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      var hits = $$(".phit", results);
+      if (!hits.length) return;
+      sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + hits.length) % hits.length;
+      hits.forEach(function (h, i) { h.classList.toggle("sel", i === sel); });
+      hits[sel].scrollIntoView({ block: "nearest" });
+    }
+    if (e.key === "Enter") {
+      var cur = $(".phit.sel", results) || $(".phit", results);
+      if (cur) cur.click();
+    }
+  });
+
+  function score(item, q) {
+    var i = item.hay.indexOf(q);
+    if (i < 0) return -1;
+    return i === 0 ? 0 : i;
+  }
+
+  function renderResults(q) {
+    q = q.trim().toLowerCase();
+    var hHits = [], cHits = [];
+    if (q) {
+      hHits = headings.filter(function (h) { return h.title.toLowerCase().indexOf(q) >= 0; }).slice(0, 6);
+      var seen = {};
+      cHits = index
+        .map(function (it) { return { it: it, s: score(it, q) }; })
+        .filter(function (o) { return o.s >= 0; })
+        .sort(function (a, b) { return a.s - b.s || a.it.line.length - b.it.line.length; })
+        .filter(function (o) {
+          if (seen[o.it.line]) return false;
+          seen[o.it.line] = 1; return true;
+        })
+        .slice(0, 40)
+        .map(function (o) { return o.it; });
+    } else {
+      hHits = headings.filter(function (h) { return h.level === 2; }).slice(0, 9);
+    }
+
+    var html = "";
+    if (hHits.length) {
+      html += '<div class="pgroup">章节</div>';
+      hHits.forEach(function (h) {
+        html += '<div class="phit" data-jump="#' + h.id + '">'
+          + '<span class="kind">§</span><code>' + escHtml(h.title) + "</code></div>";
+      });
+    }
+    if (cHits.length) {
+      html += '<div class="pgroup">命令 ' + (q ? "（" + cHits.length + " 条）" : "") + "</div>";
+      cHits.forEach(function (it) {
+        html += '<div class="phit" data-line="' + escHtml(it.line) + '">'
+          + '<span class="kind">$</span><code>' + escHtml(it.line) + "</code>"
+          + '<span class="where">' + escHtml(it.title) + "</span></div>";
+      });
+    }
+    results.innerHTML = html || '<div class="pempty">没有匹配结果，试试 <code>reverse</code> / <code>logcat</code> / <code>设备农场</code></div>';
+    sel = -1;
+
+    $$(".phit", results).forEach(function (hit) {
+      hit.addEventListener("click", function () {
+        var jump = hit.getAttribute("data-jump");
+        closePalette();
+        if (jump) { location.hash = jump; return; }
+        var line = hit.getAttribute("data-line");
+        var target = null;
+        for (var i = 0; i < index.length; i++) {
+          if (index[i].line === line) { target = index[i]; break; }
+        }
+        if (target) {
+          var d = target.el.closest("details");
+          if (d) d.open = true;
+          target.el.scrollIntoView({ behavior: "smooth", block: "center" });
+          target.el.style.transition = "box-shadow .3s";
+          target.el.style.boxShadow = "0 0 0 3px var(--accent)";
+          setTimeout(function () { target.el.style.boxShadow = ""; }, 1600);
+        }
+      });
+    });
+  }
+
+  input.addEventListener("input", function () { renderResults(input.value); });
+
+  /* ---------------- 移动端抽屉 ---------------- */
+  $("#hamburger").addEventListener("click", function () { document.body.classList.toggle("nav-open"); });
+  $("#scrim").addEventListener("click", function () { document.body.classList.remove("nav-open"); });
+  $$(".toc a").forEach(function (a) {
+    a.addEventListener("click", function () { document.body.classList.remove("nav-open"); });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# ---- 构建/走查过程产生的临时物 ----
+.edgeshot/
+_view.html
+_shot.html
+_shot-open.html
+_shot-*.png
+
+# ---- Python ----
+__pycache__/
+*.pyc
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+~$*
